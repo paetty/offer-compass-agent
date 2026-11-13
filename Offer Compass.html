@@ -1824,11 +1824,11 @@ async function renderPreparation(result) {
     return;
   }
   const packet = task?.packet;
-  area.innerHTML = `<p class="notice"><strong>Agent 投递判断</strong>先回答“值不值得投”。它会列出简历证据和缺口；缺少关键事实时只追问一个会改变判断的问题。确认值得投后，再生成可审阅的定制简历草稿。</p>
+  const trace = task?.tool_trace ?? packet?.tool_trace ?? [];
+  area.innerHTML = `<p class="notice"><strong>Python Agent V4.1 · 投递判断</strong>先回答“值不值得投”。Agent 会调用档案、JD 解析、证据检索和匹配判断工具；缺少关键事实时只追问一个会改变判断的问题。</p>
     <form id="prepare-form" class="section-title">
     <label>任务目标<textarea name="goal" maxlength="1000" rows="2">${escapeHTML(task?.goal ?? DEFAULT_PREP_GOAL)}</textarea></label>
-    <label class="check" id="model-choice" hidden><input type="checkbox" name="model"> 使用模型 Agent（将 JD、必要的简历片段、技能等级和补充回答发送给 OpenAI）</label>
-    <p class="m" id="model-status">本地规则模式可核对证据、追问及生成审阅稿。</p>
+    <p class="m" id="model-status">Agent 在本地 Python 服务中执行，工具输入、输出和状态转移会写入 SQLite。</p>
     <button>开始判断并准备投递材料</button></form>
     <p id="prepare-status" role="status" class="m section-title"></p>
     ${task?.question ? `<form id="clarify-form" class="card">
@@ -1847,7 +1847,10 @@ async function renderPreparation(result) {
       <strong>待确认或缺失</strong><p class="m">${escapeHTML(Array.isArray(packet.gaps) && packet.gaps.length ? packet.gaps.join('、') : '暂无')}</p>
       ${task.answer ? `<p class="m">${packet.confirmed ? '你确认的依据 · ' + escapeHTML(packet.confirmed) : '你补充的原话'} · ${escapeHTML(task.answer)}</p>` : ''}
       ${packet.verdict === 'hold' ? '<p class="m">先核对缺口，再准备定制稿。</p>' : '<button type="button" id="review-packet">进入红绿审阅</button>'}
-    </section>` : ''}`;
+    </section>` : ''}
+    ${trace.length ? `<details class="card agent-trace"><summary>Agent 执行轨迹 · ${trace.length} 步</summary>
+      <ol>${trace.map(item => `<li><b>${escapeHTML(item.summary || item.tool)}</b><small> ${escapeHTML(item.tool)} · ${Number(item.duration_ms) || 0}ms</small></li>`).join('')}</ol>
+      ${task?.run_id ? `<p class="m">Run ID · ${escapeHTML(task.run_id)}</p>` : ''}</details>` : ''}`;
   const form = $('#prepare-form');
   form.onsubmit = event => {
     event.preventDefault();
@@ -1873,9 +1876,7 @@ async function renderPreparation(result) {
       const response = await fetch('/api/agent', { cache: 'no-store' });
       const config = response.ok && await response.json();
       if (!area.isConnected || !area.contains(form)) return;
-      area.querySelector('#model-choice').hidden = !config?.configured;
-      area.querySelector('#model-status').textContent = config?.configured ? '默认在本机运行。可勾选模型 Agent。' :
-        '当前使用本地规则。配置 OPENAI_API_KEY 并重启服务后可启用模型 Agent。';
+      area.querySelector('#model-status').textContent = `Python Agent V${config?.version ?? '4.1'} · 本地工具编排 · ${config?.configured ? '已配置模型（后续版本接入编排）' : '当前不需要 API Key'}`;
     } catch {}
   }
 }
@@ -1888,13 +1889,12 @@ async function runPreparation(area, result, task) {
   status.textContent = '正在核对 JD 和档案证据…';
   try {
     let outcome;
-    if (task.mode === 'model') {
+    if (databaseMode && !demo) {
       const lines = task.source.split(/\r?\n/).map(line => /@|(?:手机号|联系电话|住址|手机|电话)\s*[:：]/u.test(line) ? '' : line);
-      const response = await fetch('/api/agent', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jd: task.jd, goal: task.goal, answer: task.answer ?? '', requirement: task.requirement ?? '',
-          question: task.question ?? '', skip: Boolean(task.skip),
-          lines, levels: Object.fromEntries(resumeLevels(workspace.profile)), allowModel: true }),
-        signal: AbortSignal.timeout(80000) });
+      const response = await fetch('/api/agent/run', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ run_id: task.run_id ?? '', jd: task.jd, goal: task.goal,
+          answer: task.answer ?? '', skip: Boolean(task.skip), lines,
+          levels: Object.fromEntries(resumeLevels(workspace.profile)) }), signal: AbortSignal.timeout(30000) });
       if (!response.ok) throw new Error('model');
       outcome = await response.json();
     } else {
@@ -1902,8 +1902,10 @@ async function runPreparation(area, result, task) {
     }
     if (state !== workspace || !area.isConnected || !samePreparation(task, result)) return;
     const { question, requirement, packet, ...base } = task;
-    state.preparation = outcome.question ? { ...base, question: outcome.question, requirement: outcome.requirement } :
-      { ...base, askedRequirement: task.requirement, packet: outcome };
+    const next = { ...base, mode: databaseMode && !demo ? 'agent_v4_1' : 'local',
+      run_id: outcome.run_id ?? task.run_id, tool_trace: outcome.tool_trace ?? task.tool_trace };
+    state.preparation = outcome.question ? { ...next, question: outcome.question, requirement: outcome.requirement,
+      requirement_id: outcome.requirement_id } : { ...next, askedRequirement: task.requirement, packet: outcome };
     if (!outcome.question && outcome.verdict !== 'hold') {
       state.rewrite = reviewDraft(result, task.source, outcome.evidence, task.include ? task.answer : '');
     }

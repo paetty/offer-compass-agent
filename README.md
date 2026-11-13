@@ -2,6 +2,8 @@
 
 Offer Compass 是一个“证据约束型”求职 Agent MVP：用户提供个人档案和岗位 JD 后，系统核对简历证据、识别能力缺口、评估匹配度，并生成可逐条审核的定制简历草稿。
 
+当前版本为 **Agent V4.1**：前端只负责交互，Python Agent Runtime 负责状态迁移，受约束工具负责档案读取、JD 解析、证据检索、匹配判断和关键追问。每个 Run 和工具调用均保存到本地 SQLite，可恢复、可追溯。
+
 ## MVP 能力
 
 - 本地 SQLite 档案、JD 分析和投递记录
@@ -11,6 +13,31 @@ Offer Compass 是一个“证据约束型”求职 Agent MVP：用户提供个�
 - Word / PDF 原件关联、逐条采纳或保留原文
 - Word 原格式导出，优先使用本机 Word 生成高保真 PDF 预览
 - PDF 限制修改模式与版式风险防护
+- 持久化 Agent Run、状态机和工具调用轨迹
+
+## Agent V4.1 架构
+
+```text
+Offer Compass.html
+       ↓ POST /api/agent/run
+offer_compass_runtime.py
+       ↓ 受约束工具调用
+offer_compass_tools.py
+       ↓
+SQLite: agent_runs + agent_tool_calls
+```
+
+当前工具：
+
+- `get_candidate_profile`
+- `parse_job_description`
+- `retrieve_resume_evidence`
+- `assess_job_fit`
+- `create_clarifying_question`
+
+当前状态：`jd_received` → `evidence_retrieval` → `clarification_required` / `fit_assessed`。
+
+详细设计见 `Agent V4.1 架构与接口.md`。
 
 ## 本地启动
 
@@ -27,6 +54,7 @@ python offer_compass_server.py --port 8765 --open
 ## 测试
 
 ```powershell
+python -m unittest -v test_agent_runtime.py
 node .offer-review-qa.cjs
 ```
 

@@ -15,9 +15,11 @@ from getpass import getpass
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.error import URLError
+from urllib.parse import parse_qs, urlparse
 from urllib.request import urlopen
 
 import offer_compass_agent
+import offer_compass_runtime
 
 
 ROOT = Path(__file__).resolve().parent
@@ -56,6 +58,7 @@ def initialize(db_path):
             )
         """)
         db.execute("INSERT OR IGNORE INTO workspace VALUES (1, 0, NULL, NULL)")
+    offer_compass_runtime.initialize(db_path)
 
 
 def valid_update(body):
@@ -100,13 +103,27 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
         if self.headers.get("Host") != self.expected_host():
             self.send_error(403)
             return
-        if self.path == "/":
+        route = urlparse(self.path)
+        if route.path == "/":
             self.send_body(200, (ROOT / "Offer Compass.html").read_bytes(), "text/html; charset=utf-8")
-        elif self.path == "/api/health":
-            self.send_json(200, {"app": "Offer Compass"})
-        elif self.path == "/api/agent":
-            self.send_json(200, {"configured": offer_compass_agent.configured()})
-        elif self.path == "/api/workspace":
+        elif route.path == "/api/health":
+            self.send_json(200, {"app": "Offer Compass", "agent_version": "4.1"})
+        elif route.path == "/api/agent":
+            self.send_json(200, {"configured": offer_compass_agent.configured(), "version": "4.1"})
+        elif route.path == "/api/agent/run":
+            run_id = parse_qs(route.query).get("run_id", [""])[0]
+            if not run_id or len(run_id) > 80:
+                self.send_json(400, {"error": "invalid_run_id"})
+                return
+            try:
+                result = offer_compass_runtime.AgentRuntime(self.server.db_path).get(run_id)
+            except KeyError:
+                self.send_json(404, {"error": "run_not_found"})
+            except (ValueError, sqlite3.Error):
+                self.send_json(500, {"error": "agent_state_unavailable"})
+            else:
+                self.send_json(200, result)
+        elif route.path == "/api/workspace":
             try:
                 with closing(sqlite3.connect(str(self.server.db_path))) as db:
                     revision, change_id, data = db.execute(
@@ -143,6 +160,26 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
                 self.send_json(503, {"error": "word_preview_unavailable"})
             else:
                 self.send_body(200, result, "application/pdf")
+            return
+        if self.path == "/api/agent/run":
+            if self.headers.get_content_type() != "application/json":
+                self.send_error(415)
+                return
+            try:
+                size = int(self.headers.get("Content-Length", 0))
+                if not 0 < size <= 512 * 1024:
+                    self.send_error(413)
+                    return
+                body = json.loads(self.rfile.read(size).decode("utf-8"))
+                result = offer_compass_runtime.AgentRuntime(self.server.db_path).run(body)
+            except (ValueError, RecursionError):
+                self.send_json(400, {"error": "invalid_agent_input"})
+            except sqlite3.Error:
+                self.send_json(500, {"error": "agent_state_unavailable"})
+            except Exception:
+                self.send_json(500, {"error": "agent_runtime_failed"})
+            else:
+                self.send_json(200, result)
             return
         if self.path != "/api/agent":
             self.send_error(404)

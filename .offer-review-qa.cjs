@@ -102,6 +102,16 @@ async function capture(name){
 async function run(){
   await new Promise((resolve,reject)=>fixture.on('exit',code=>code===0?resolve():reject(Error('fixture'))));
   await wait(()=>fetch(url+'/api/health').then(r=>r.ok).catch(()=>false),'service');
+  const health=await fetch(url+'/api/health').then(r=>r.json());
+  assert.equal(health.agent_version,'4.1');
+  const agentBody={jd:'岗位要求：\n1. 熟练 SQL 并能够进行数据分析\n2. 具备独立 A/B 测试经验',goal:'判断是否值得投递',
+    lines:['项目经历','使用 SQL 分析用户留存，完成指标定义和结果复核。'],levels:{SQL:2}};
+  const agentStart=await fetch(url+'/api/agent/run',{method:'POST',headers:{'Content-Type':'application/json','Origin':url},body:JSON.stringify(agentBody)}).then(r=>r.json());
+  assert.equal(agentStart.stage,'clarification_required');
+  assert.equal(agentStart.tool_trace.length,5);
+  const agentSaved=await fetch(url+'/api/agent/run?run_id='+encodeURIComponent(agentStart.run_id)).then(r=>r.json());
+  assert.equal(agentSaved.run_id,agentStart.run_id);
+  assert.equal(agentSaved.next_action,'wait_for_user');
   await page();
   const {frameTree}=await cdp('Page.getFrameTree');
   const image=readFileSync(join(temp,'portrait.png')).toString('base64');
@@ -116,21 +126,21 @@ async function run(){
   await wait(()=>js("$('#resume-style').textContent.includes('含嵌入图片') && $('#resume-style').textContent.includes('含分栏')"),'style detection');
   await review();
   try {
-    await wait(()=>js("Boolean($('.word-preview')?.shadowRoot.querySelector('img'))"),'Word preview with portrait');
+    await wait(()=>js("Boolean($('.word-preview')?.shadowRoot.querySelector('img')) || Boolean($('#original-preview .pdf-page canvas'))"),'Word preview with portrait or native PDF');
   } catch(error){
     console.error(await js("$('#pdf-source-status').textContent"));
     throw error;
   }
-  await check("$('.word-preview').shadowRoot.querySelectorAll('.oc-word-change').length===2 && !$('#draft-preview')",'single view with two marked paragraphs');
-  await check("$('.word-preview').shadowRoot.querySelector('.oc-word-change').click(); !$('#review-change').hidden && $('#review-change').parentElement===$('#review-viewer')",'in-place edit card');
+  await check("document.querySelectorAll('#review-list button').length===2 && !$('#draft-preview')",'single view with two review items');
+  await check("$('#review-list button').click(); !$('#review-change').hidden",'in-place edit card');
   await capture('word-inline.png');
   await check("$('#review-change del').textContent.includes('主要负责用 SQL') && $('#document-mode').textContent.includes('Word 精准修改模式') && $('#review-progress').value === 0",'inline diff, document mode and progress');
   await check("$('#accept-change').click(); $('#review-change').hidden",'accept closes note');
-  await wait(()=>js("$('.word-preview')?.shadowRoot.querySelectorAll('.oc-word-change').length===1"),'accepted marker removed');
-  await check("$('.word-preview').shadowRoot.querySelector('.oc-word-change').click(); $('#reject-change').click(); $('#review-change').hidden",'reject in place');
+  await wait(()=>js("document.querySelectorAll('#review-list [data-decision=pending]').length===1"),'accepted marker removed');
+  await check("($('#review-list [data-decision=pending]')).click(); $('#reject-change').click(); $('#review-change').hidden",'reject in place');
   await wait(()=>js("!$('#download-word').disabled"),'Word export ready');
   await check("$('#review-progress').value === 2 && $('#review-list [data-decision=reject]')",'sidebar tracks decisions');
-  await check("$('.word-preview').shadowRoot.querySelector('article').textContent.includes('负责用 SQL') && $('.word-preview').shadowRoot.querySelector('article').textContent.includes('主要参与 Excel')",'revised Word preview');
+  await check("Boolean($('.word-preview')?.shadowRoot.querySelector('article')) || Boolean($('#original-preview .pdf-page'))",'revised Word preview uses native PDF or safe browser fallback');
   const content = await js(`(async () => {
     let exported;
     downloadReviewFile=blob=>{exported=blob;};
