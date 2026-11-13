@@ -1,0 +1,2993 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Offer Compass</title>
+<link rel="icon" href="data:,">
+<style>
+:root{--bg:#fafaf8;--fg:#17171a;--mut:#74747c;--line:#e4e4e0;--card:#fff;--acc:#4f46e5;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f0f12;--fg:#f1f1f3;--mut:#9a9aa3;--line:#26262c;--card:#17171c;--acc:#8b85ff;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f0f12;--fg:#f1f1f3;--mut:#9a9aa3;--line:#26262c;--card:#17171c;--acc:#8b85ff;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.6 -apple-system,"PingFang SC","Helvetica Neue",Arial,sans-serif}
+.w{max-width:640px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:22px;margin:8px 0 2px;letter-spacing:-.02em}h2{font-size:18px;margin:20px 0 6px}h3{font-size:14px;margin:0 0 8px}
+.m{color:var(--mut);font-size:13px;margin:0 0 10px}
+nav{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:12px 0 4px}
+nav button{flex:1;background:none;border:0;border-bottom:2px solid transparent;padding:10px 0;color:var(--mut);font:inherit;cursor:pointer}
+nav button.on{color:var(--fg);border-color:var(--acc);font-weight:600}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:12px 0}
+textarea,input,select{width:100%;font:inherit;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 11px;margin:6px 0}
+textarea{resize:vertical}
+button{font:inherit;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 14px;cursor:pointer}
+button.pri{background:var(--acc);border-color:var(--acc);color:#fff;width:100%;margin:6px 0}
+.big{font-size:40px;font-weight:700;letter-spacing:-.03em;text-align:center}.big small{font-size:13px;color:var(--mut);font-weight:400;margin-left:6px}
+.rd{display:block;width:100%;max-width:300px;margin:0 auto}
+.pg{transform-origin:150px 150px;animation:g .9s cubic-bezier(.2,.8,.2,1)}
+@keyframes g{from{transform:scale(0)}}
+.tag{display:inline-block;border:1px solid var(--line);border-radius:99px;padding:2px 10px;margin:3px 4px 3px 0;font-size:13px}
+.tip{border-top:1px solid var(--line);padding:8px 0;font-size:13px}.tip:first-of-type{border:0}
+.hd{display:flex;gap:8px;align-items:baseline;justify-content:space-between}
+.row{display:flex;gap:8px;align-items:center}.row select{flex:1}
+.col{display:flex;flex-direction:column}
+.bar{height:6px;background:var(--line);border-radius:9px;margin:8px 0;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--acc);transition:width .5s cubic-bezier(.2,.8,.2,1)}
+.sc{font-size:22px;font-weight:700}
+.g{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.g label{font-size:12px;color:var(--mut)}.g input{margin:2px 0}
+.sl{display:grid;grid-template-columns:64px 1fr 20px;gap:8px;align-items:center;font-size:13px;margin:4px 0}.sl input{margin:0;padding:0}
+.bm{display:block;width:100%;max-width:320px;margin:8px auto}
+.bg{transform-origin:150px 50px;transition:transform .7s cubic-bezier(.3,1.4,.5,1)}
+summary{cursor:pointer;font-size:14px}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px}.fields label{min-width:0}
+.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.actions button{flex:0 1 auto}
+.actions button[aria-pressed="true"],.actions [data-update]{border-color:var(--acc);color:var(--acc);font-weight:600}
+.workspace-tools{margin:10px 0}.workspace-tools button{font-size:13px;padding:5px 10px}
+#storage-status{margin:6px 0}.data-tools{margin:14px 0}
+.fields small,.dim small{display:block;color:var(--mut)}
+.notice{border-left:3px solid var(--acc);padding:6px 10px;margin:8px 0;color:var(--fg);font-size:13px}
+.missing input{border-color:var(--acc)}
+.section-title{margin-top:12px}.tag button{border:0;background:none;font-size:15px;padding:0 0 0 5px;line-height:1}
+.dim{display:flex;flex-wrap:wrap;justify-content:center;text-align:center;gap:8px 16px;font-size:13px}
+.break{overflow-wrap:anywhere}.original{white-space:pre-wrap;font-size:13px}
+.match-row{display:grid;grid-template-columns:minmax(76px,1fr) 2fr minmax(92px,auto);gap:10px;align-items:center;margin:8px 0;font-size:13px}
+.match-row .bar{margin:0}.match-row b{color:var(--tone);text-align:right}.match-row i{background:var(--tone)}
+#rewrite-editor:not([hidden]){position:fixed;inset:0;z-index:20;overflow:auto;background:#0c0d11;color:#f1f1f3;color-scheme:dark;--card:#17171c;--fg:#f1f1f3;--mut:#9a9aa3;--line:#292a31;--acc:#8b85ff}
+body:has(#rewrite-editor:not([hidden])){overflow:hidden}
+.review-header{position:sticky;top:0;z-index:8;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:#121318ed;border-bottom:1px solid var(--line);padding:9px clamp(12px,3vw,36px);backdrop-filter:blur(16px)}
+.review-header .actions,.review-meta{gap:8px;display:flex;align-items:center;flex-wrap:wrap}
+.review-header button,.review-side button,.inline-review button{font-size:13px;padding:6px 11px}
+.review-meta small{color:var(--mut);overflow-wrap:anywhere}
+.review-role{border-radius:20px;padding:3px 9px;background:#24252d}
+.review-progress{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--mut)}
+.review-progress progress{width:clamp(60px,9vw,124px);height:8px;accent-color:var(--acc)}
+.export-message{padding:4px 9px;border-radius:8px;background:#292a31;color:var(--fg);font-size:12px}
+.review-grid{width:min(1120px,100%);margin:auto;display:grid;grid-template-columns:minmax(0,1fr) clamp(210px,25vw,300px);align-items:start;gap:24px;padding:24px clamp(10px,3vw,24px)}
+.review-side{position:sticky;top:calc(var(--review-header-height, 60px) + 16px);max-height:calc(100dvh - var(--review-header-height, 60px) - 32px);overflow:auto;background:#17171c;border:1px solid var(--line);border-radius:15px;padding:16px;box-shadow:0 18px 46px #0005}
+.review-side .hd{align-items:center}.review-side h3{margin:0;font-size:15px}.review-side summary{font-size:13px}
+.review-side .tag{border:0}.review-plus,.review-minus{background:#24252d;color:var(--fg)}
+.review-item{display:block;text-align:left;width:100%;margin:8px 0;background:#1e1f25;overflow-wrap:anywhere}
+.review-item[aria-current="true"]{outline:2px solid var(--acc);outline-offset:-1px;background:#28263b}
+.review-item small{display:block;color:var(--mut);margin-bottom:3px}
+.review-item[data-decision="accept"] small,.review-item[data-decision="reject"] small{color:var(--mut)}
+.review-source{border-top:1px solid var(--line);margin-top:14px;padding-top:12px}
+#rewrite-editor .review-primary{background:var(--acc);color:#fff;border-color:var(--acc)}
+#rewrite-editor button:disabled{opacity:.48;cursor:default}
+.review-paper-column{min-width:0}
+#rewrite-editor .page-scroll{background:transparent;border:0;border-radius:0;padding:0;height:auto;overflow:visible;overscroll-behavior:auto}
+#original-preview .pdf-page,#original-preview .paper-shell,#original-preview .word-preview{box-shadow:0 18px 52px #0009}
+#rewrite-editor .inline-review{border:2px solid var(--acc);background:#1b1b23}
+.review-redline{font-size:14px;line-height:1.7;white-space:pre-wrap;color:var(--fg)}
+.review-redline del,.review-redline ins{display:block;margin:5px 0;padding:7px 9px;border-radius:8px}.review-redline del{background:#ffe2e3;color:#a32535}.review-redline ins{background:#d9f3e3;color:#126345;text-decoration:none}.review-redline small{display:block;color:var(--mut);font-size:12px;line-height:1.3}
+.inline-review [data-edit] textarea{color:var(--fg);background:#111217}
+.review-context{display:flex;align-items:center;gap:7px;color:var(--mut);font-size:12px}.review-context i{width:6px;height:6px;border-radius:50%;background:#4fc58b}.source-gate{margin:0 0 14px;padding:12px 14px;border:1px dashed #6e667f;border-radius:12px;background:#17171c;color:var(--mut);font-size:13px}.source-gate strong{display:block;color:var(--fg);margin-bottom:3px}.source-gate label{display:inline-block;margin-top:8px;color:var(--acc);cursor:pointer}.source-gate input{display:none}.source-gate.ready{border-style:solid;border-color:#2f765b;background:#14211c}.source-gate.ready strong{color:#65d39f}.document-mode{margin:10px 0 0;padding:8px 10px;border-radius:9px;background:#24252d;color:var(--mut);font-size:12px}.document-mode b{color:var(--fg)}.document-mode.risk{background:#34262a;color:#f0b8bd}.document-mode.risk b{color:#ffd9dc}
+.paper-hit{min-height:12px;min-width:14px}
+.paper-hit[data-decision="accept"],.paper-hit[data-decision="reject"]{border-color:transparent;background:transparent}
+@media(max-width:640px){.review-grid{grid-template-columns:minmax(0,1fr);gap:12px;padding-top:12px}.review-side{position:static;max-height:none;grid-row:1}.review-list{max-height:146px;overflow:auto}.review-header{position:relative}}
+@media print{body:has(#rewrite-editor:not([hidden])){overflow:visible}}
+.page-scroll{position:relative;height:min(72vh,760px);overflow:auto;overscroll-behavior:contain;background:var(--bg);padding:7px;border:1px solid var(--line);border-radius:8px}
+.inline-review{background:var(--card);border:1px solid var(--acc);box-shadow:0 12px 28px #0004;border-radius:12px;padding:12px;overflow-wrap:anywhere}
+.page-scroll>.inline-review{position:absolute;z-index:4;left:12px;right:12px;margin:0 auto;max-width:640px}
+.inline-review .actions{margin-top:8px}
+.review-status{min-height:1.6em;margin-top:8px}.word-preview{transform-origin:top left}
+.paper-shell{margin:0 auto 8px;position:relative;overflow:hidden}
+.pdf-page{position:relative;margin:0 auto 8px;background:#fff;container-type:inline-size}
+.pdf-page canvas{display:block;width:100%;height:auto}
+.paper{width:210mm;height:297mm;background:white;color:#17171a;padding:17mm 18mm;font:10.5pt/1.5 Arial,"Microsoft YaHei",sans-serif;overflow:hidden;transform-origin:top left}
+.paper h2{font-size:11.5pt;border-bottom:1px solid #d0d4d9;margin:10pt 0 4pt}
+.paper p{margin:0 0 4pt;white-space:pre-wrap;overflow-wrap:anywhere}
+.paper-block{display:flow-root}
+.paper-block[data-review="pending"]{background:#def6e7;box-shadow:inset 3px 0 #268358;cursor:pointer}
+.paper-block[data-review="removed"]{background:#fce5e7;color:#952539;text-decoration:line-through;cursor:pointer}
+.paper-block[data-review="accept"]{background:#eaf7ef;cursor:pointer}
+.paper-block[data-review="reject"]{background:#fdf0f1;cursor:pointer}
+.paper-hit{position:absolute;padding:0;border:1px solid #ca4a60;background:#ed6b8040;border-radius:2px}
+.pdf-replacement{position:absolute;z-index:3;margin:0;padding:.08em .16em;border:0;border-radius:0;background:#fff;color:#111;font:400 1.42cqw/1.32 Arial,"Microsoft YaHei",sans-serif;text-align:left;overflow:hidden;cursor:pointer;box-shadow:none}.pdf-replacement .pdf-bullet{display:inline-block;width:.54em;height:.54em;margin:0 .7em .06em .12em;border-radius:50%;background:#111}.pdf-replacement strong{font-weight:700}.pdf-replacement span:last-child{font-weight:400}
+.pdf-replacement:focus-visible{outline:2px solid #7056e9;outline-offset:1px}
+.paper-hit[aria-current="true"],.paper-block[aria-current="true"]{outline:2px solid #7056e9;outline-offset:1px}
+.paper-measure{position:fixed;visibility:hidden;top:0;left:-10000px;pointer-events:none}
+.agent-evidence{margin:8px 0;padding-left:18px;font-size:13px}
+.rewrite-print{display:none}
+.check{display:inline-flex;gap:6px;align-items:center}.check input{width:auto}
+a{color:var(--acc)}
+@page{size:A4;margin:0}
+@media print{
+  body{background:white;color:#161616}
+  body.print-resume>.w{display:none}
+  body.print-resume>.rewrite-print{display:block}
+  .rewrite-print .paper{break-after:page;overflow:hidden}
+  .rewrite-print .paper:last-child{break-after:auto}
+  .rewrite-print .pdf-print-page{position:relative;width:210mm;height:297mm;overflow:hidden;break-after:page;background:#fff}
+  .rewrite-print .pdf-print-page:last-child{break-after:auto}
+  .rewrite-print .pdf-print-page>img{display:block;width:100%;height:100%;object-fit:fill}
+  .rewrite-print .pdf-replacement{font-size:3mm;border:0;background:#fff;color:#111;box-shadow:none;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+@media(max-width:440px){.fields{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.pg,.bg,.bar i{animation:none;transition:none}}
+</style></head>
+<body><div class="w">
+<h1>Offer Compass</h1>
+<p class="m">从读懂一个 JD，到选出最适合你的 offer。</p>
+<div class="workspace-tools">
+  <button id="demo-toggle" type="button" disabled>体验演示数据</button>
+  <p id="storage-status" class="m" role="status">正在读取档案…</p>
+  <button id="retry-save" type="button" hidden>重试保存</button>
+  <button id="reload-database" type="button" hidden>加载数据库版本</button>
+</div>
+<nav hidden>
+<button data-t="p" onclick="go('p')">档案</button>
+<button data-t="j" onclick="go('j')">JD 分析</button>
+<button data-t="a" onclick="go('a')">投递</button>
+<button data-t="s" onclick="go('s')">天平</button>
+</nav>
+<main id="m"></main>
+<details id="data-tools" class="data-tools" hidden>
+  <summary>备份与迁移</summary>
+  <p class="m">从文件模式迁移时，先在原浏览器打开原路径的 HTML 文件并导出备份，再到数据库版导入。</p>
+  <div class="actions">
+    <button id="export-workspace" type="button" disabled>导出备份</button>
+    <button id="import-workspace" type="button" disabled>导入备份</button>
+  </div>
+  <input id="workspace-file" type="file" accept=".json,application/json" hidden aria-label="选择备份文件">
+  <p id="backup-status" class="m" role="status"></p>
+</details>
+</div>
+<article id="resume-print" class="rewrite-print" aria-hidden="true"></article>
+<script>
+const $ = selector => document.querySelector(selector);
+const main = $('#m');
+const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, char =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
+const normalize = value => String(value ?? '').normalize('NFKC').toLowerCase()
+  .replace(/([\p{Script=Han}])\s+(?=[\p{Script=Han}])/gu, '$1').replace(/\s+/g, ' ').trim();
+const splitList = value => [...new Set(value.split(/[,，、;\n；]+/).map(part => part.trim()).filter(Boolean))];
+const K = ['专业技能', '工具与方法', '行业经验', '软技能', '学历与语言'];
+const GROUPS = {
+  education: '教育背景', skills: '技能工具', abilities: '能力',
+  projects: '项目经历', experience: '实习／工作经历', honors: '荣誉奖项'
+};
+const PREFERENCES = { roles: '岗位', industries: '行业', cities: '城市' };
+const ST = { intent: '意向', applied: '已投递', interview: '面试中', offer: '拿到 offer', rejected: '已拒绝' };
+const WK = [['salary', '薪资'], ['city', '城市'], ['cost', '生活成本'], ['growth', '成长空间'], ['stability', '稳定性'], ['interest', '个人兴趣']];
+const SK = WK.filter(([key]) => key !== 'salary' && key !== 'cost');
+
+// 每行第一个词为统一标签，其余为同义词。
+const DICT = [
+  [
+    ['数据分析', 'data analysis', '数据洞察'], ['产品设计', 'product design', '原型设计'],
+    ['需求分析', '需求梳理', 'requirements analysis'], ['用户研究', '用户访谈', 'user research'],
+    ['商业化', 'monetization'], ['增长', '用户增长', 'growth'], ['运营', 'operations'],
+    ['策略', 'strategy'], ['算法', 'algorithm'], ['项目管理', 'project management'],
+    ['软件开发', '软件工程', 'software development'], ['接口开发', 'api 开发', 'rest api'],
+    ['测试', '软件测试', '测试用例', 'software testing'], ['机器学习', 'machine learning'],
+    ['渗透测试', 'penetration testing', 'pentest'], ['应急响应', 'incident response'],
+    ['内容创作', '文案策划', 'copywriting'], ['用户运营', '社群运营'],
+    ['交互设计', 'ux design', 'interaction design'], ['视觉设计', 'ui design', '平面设计'],
+    ['招聘', '人才招聘', 'recruitment'], ['市场调研', 'market research']
+  ],
+  [
+    ['SQL', 'MySQL', 'PostgreSQL', 'SQLite'], ['Python', 'Pandas', 'NumPy'],
+    ['Axure'], ['Figma'], ['Excel', '电子表格'], ['A/B 测试', 'a/b', 'ab 测试', 'ab testing'],
+    ['PRD', '产品需求文档'], ['埋点', '事件追踪'], ['Tableau'], ['数据看板', '仪表盘', 'dashboard'],
+    ['Java', 'Spring Boot'], ['JavaScript', 'TypeScript', 'JS', 'TS'], ['Git', 'GitHub'],
+    ['Linux', 'Ubuntu'], ['Docker', '容器化'], ['Wireshark'], ['Burp Suite', 'Burp'],
+    ['Photoshop', 'PS'], ['Power BI', 'PowerBI'], ['HTML', 'HTML5'], ['CSS', 'CSS3'], ['Vue', 'Vue.js'], ['React', 'React.js']
+  ],
+  [
+    ['广告', '数字营销', 'advertising'], ['电商', '电子商务', 'e-commerce', 'ecommerce'],
+    ['社区', '内容社区'], ['金融', '银行', '证券', '保险', 'fintech'], ['医疗', '医药', 'healthcare'],
+    ['教育', '教培', 'edtech'], ['游戏', 'gaming'], ['互联网', 'internet'], ['SaaS', '企业软件'],
+    ['AI', '人工智能', '大模型', 'artificial intelligence'], ['网络安全', '信息安全', 'cybersecurity'],
+    ['制造业', '智能制造'], ['新能源', '新能源汽车'], ['物流', '供应链']
+  ],
+  [
+    ['沟通', '表达', 'communication'], ['协作', '团队合作', '团队', 'collaboration', 'teamwork'],
+    ['推动', '推进', '执行力'], ['逻辑', '逻辑思维', '结构化思维'], ['学习能力', '快速学习', '自学'],
+    ['责任心', '责任感'], ['抗压', '抗压能力'], ['问题解决', '解决问题', 'problem solving']
+  ],
+  [
+    ['本科', '学士', 'bachelor'], ['硕士', '研究生', 'master'], ['博士', 'phd'],
+    ['大专', '专科'], ['英语', '英文', 'CET-4', 'CET-6', 'english'], ['日语', '日文', 'japanese'],
+    ['韩语', '韩文', 'korean'], ['法语', '法文', 'french'], ['德语', '德文', 'german'],
+    ['西班牙语', '西语', 'spanish'], ['普通话', '中文', 'mandarin'], ['计算机', 'computer science'],
+    ['统计', '统计学', 'statistics'], ['数据科学', 'data science'], ['应届生', '应届毕业生']
+  ]
+];
+const HONORS = [
+  ['奖学金', 'scholarship'], ['一等奖', '金奖'], ['二等奖', '银奖'], ['三等奖', '铜奖'],
+  ['优秀毕业生'], ['优秀学生干部'], ['竞赛获奖', '大赛获奖']
+];
+const SECTION_HEADINGS = {
+  education: '教育背景|教育经历|学历背景|教育|education',
+  skills: '专业技能|技能工具|技能证书|技能清单|技能|technical skills|skills',
+  abilities: '核心能力|个人能力|能力|competencies',
+  projects: '项目经历|项目经验|项目实践|项目|projects|project experience',
+  experience: '实习\\/工作经历|实习经验|实习经历|工作经历|工作经验|实习|工作|experience|internship|work experience',
+  honors: '荣誉\\/奖项|获奖经历|荣誉奖项|获奖情况|奖项|荣誉|awards|honors',
+  other: '自我评价|个人简介|个人总结|求职意向|求职偏好|自我介绍|summary|objective'
+};
+const HEADINGS = Object.entries(SECTION_HEADINGS).map(([key, labels]) =>
+  [key, new RegExp('^(?:' + labels + ')(?:(?:\\s*:\\s*|\\s+)(.*)|$)', 'iu')]);
+const quotePattern = text => text.replace(/[.*+?^$\x7b\x7d()|[\]\\]/g, '\\$&');
+const keywordPattern = aliases => new RegExp(aliases.map(alias => {
+  const term = normalize(alias);
+  return (/^[a-z0-9]/.test(term) ? '(?<![a-z0-9])' : '') + quotePattern(term)
+    + (/[a-z0-9]$/.test(term) ? '(?![a-z0-9])' : '');
+}).join('|'), 'u');
+const TERMS = [...DICT.flat(), ...HONORS];
+const ALIASES = new Map(TERMS.flatMap(aliases => aliases.map(alias => [normalize(alias), aliases[0]])));
+const TERM_PATTERNS = new Map(TERMS.map(aliases => [aliases[0], keywordPattern(aliases)]));
+const HONOR_WORDS = new Set(HONORS.map(([word]) => word));
+const LANGUAGES = new Set(['英语', '日语', '韩语', '法语', '德语', '西班牙语', '普通话']);
+const EDUCATION_FACTS = new Set(DICT[4].map(([word]) => word).filter(word => !LANGUAGES.has(word)));
+const TOOLS = new Set([...DICT[0], ...DICT[1]].map(([word]) => word));
+const LEVELS = ['待确认', '了解', '熟练', '精通'];
+const LEVEL_WORDS = [
+  [3, '精通|专家级|母语(?:水平)?|\\b(?:expert|native)\\b'],
+  [2, '熟练(?:使用|掌握|运用)?|熟悉|流利|\\b(?:proficien(?:t|cy)|fluent)\\b'],
+  [1, '了解|入门|基础|\\b(?:familiar(?:ity)?|basic)\\b']
+];
+const emptyKeywords = () => Object.fromEntries(Object.keys(GROUPS).map(key => [key, []]));
+const canonical = word => ALIASES.get(normalize(word)) ?? word.trim();
+
+function statedLevel(text, pattern) {
+  const words = pattern.source;
+  for (const [level, terms] of LEVEL_WORDS) {
+    const cue = '(?:' + terms + ')';
+    const before = new RegExp(cue + '(?:\\s*(?:with|in|of|于|使用|掌握|运用))?\\s*(?:' + words + ')', 'u');
+    const after = new RegExp('(?:' + words + ')\\s*(?:[:：]\\s*)?' + cue, 'u');
+    if (before.test(text) || after.test(text)) return level;
+  }
+  return 0;
+}
+
+function gradedSkills(profile) {
+  const result = new Map();
+  for (const [group, items] of Object.entries(profile.keywords)) {
+    if (group === 'honors') continue;
+    for (const item of items) {
+      const word = canonical(item.word);
+      if (TOOLS.has(word) || LANGUAGES.has(word) || (group === 'skills' && !TERM_PATTERNS.has(word))) {
+        result.set(normalize(word), word);
+      }
+    }
+  }
+  return result;
+}
+
+function resumeLevels(profile) {
+  const levels = new Map();
+  const lines = Object.entries(resumeSections(profile.resumeText))
+    .flatMap(([group, content]) => group === 'honors' ? [] : content).map(normalize);
+  for (const [key, word] of gradedSkills(profile)) {
+    const pattern = TERM_PATTERNS.get(word) ?? keywordPattern([word]);
+    const level = lines.reduce((best, line) => Math.max(best, statedLevel(line, pattern)), 0);
+    levels.set(key, profile.levels?.[key] ?? level);
+  }
+  return levels;
+}
+
+function keywordEvidence(section, word) {
+  return section === 'projects' || section === 'experience' ||
+    (section === 'education' && EDUCATION_FACTS.has(word)) ? 'strong' : 'weak';
+}
+
+function resumeSections(text) {
+  const sections = { ...Object.fromEntries(Object.keys(GROUPS).map(key => [key, []])), other: [] };
+  let current = 'other';
+  for (const line of text.split(/\r?\n/)) {
+    const content = line.normalize('NFKC').trim().replace(/^(?:#{1,6}\s+|[一二三四五六七八九\d]+[.、]\s*|[【[])/u, '').replace(/[】\]](?=\s*[:]|$)/u, '');
+    const heading = HEADINGS.map(([key, re]) => [key, content.match(re)]).find(([, match]) => match);
+    if (heading) {
+      current = heading[0];
+      if (heading[1][1]) sections[current].push(heading[1][1]);
+    } else if (content) {
+      sections[current].push(content);
+    }
+  }
+  return sections;
+}
+
+function extractKeywords(text) {
+  const keywords = emptyKeywords();
+  for (const [section, lines] of Object.entries(resumeSections(text))) {
+    const content = normalize(lines.join('\n'));
+    for (const [word, pattern] of TERM_PATTERNS) {
+      if (!pattern.test(content)) continue;
+      const group = section === 'honors' || HONOR_WORDS.has(word) ? 'honors' : section === 'other'
+        ? (DICT[4].some(([key]) => key === word) ? 'education' : DICT[3].some(([key]) => key === word) ? 'abilities' : 'skills')
+        : section;
+      if (keywords[group].some(item => item.word === word)) continue;
+      const evidence = group === 'honors' ? 'weak' : keywordEvidence(section, word);
+      keywords[group].push({ word, evidence, source: 'auto' });
+    }
+    if (section === 'honors') {
+      for (const line of lines) {
+        const word = line.replace(/^[-•·]\s*/, '').trim();
+        if (word && !keywords.honors.some(item => normalize(item.word) === normalize(word))) {
+          keywords.honors.push({ word, evidence: 'weak', source: 'auto' });
+        }
+      }
+    }
+  }
+  return keywords;
+}
+
+function updateResume(text, replace = false) {
+  const profile = state.profile;
+  const extracted = extractKeywords(text);
+  const previous = replace ? emptyKeywords() : extractKeywords(profile.resumeText);
+  for (const key of Object.keys(GROUPS)) {
+    const edited = replace ? [] : profile.keywords[key];
+    const manual = edited.filter(item => item.source === 'manual');
+    const has = (items, word) => items.some(item => normalize(item.word) === normalize(word));
+    const removed = previous[key].filter(item => !has(edited, item.word));
+    extracted[key] = [...extracted[key].filter(item => !has(removed, item.word) && !has(manual, item.word)), ...manual];
+  }
+  profile.resumeText = text;
+  profile.keywords = extracted;
+  state.lastAnalysis = null;
+  save();
+}
+
+function readLocal(key) {
+  try { return JSON.parse(localStorage.getItem(key)); }
+  catch { return null; }
+}
+
+function normalizeWorkspace(stored) {
+  const data = stored ?? {};
+  const old = data.profile ?? {};
+  const savedResume = old.resumeText ?? old.resume;
+  const resumeText = typeof savedResume === 'string' ? savedResume : '';
+  const keywords = extractKeywords(resumeText);
+  for (const key of Object.keys(GROUPS)) {
+    if (Array.isArray(old.keywords?.[key])) {
+      const extracted = keywords[key];
+      keywords[key] = old.keywords[key].filter(item => typeof item?.word === 'string' && item.word.trim()).map(item => {
+        const word = canonical(item.word);
+        if (key !== 'education' || !EDUCATION_FACTS.has(word)) return item;
+        const evidence = item.source === 'manual' ? keywordEvidence(key, word) :
+          extracted.find(tag => tag.word === word)?.evidence ?? 'weak';
+        return { ...item, evidence };
+      });
+    }
+  }
+  if (typeof old.skills === 'string' && !old.keywords) {
+    for (const label of splitList(old.skills)) {
+      const word = canonical(label);
+      if (!keywords.skills.some(item => normalize(item.word) === normalize(word))) {
+        keywords.skills.push({ word, evidence: 'weak', source: 'manual' });
+      }
+    }
+  }
+  const savedApplications = data.applications ?? data.apps;
+  const applications = Array.isArray(savedApplications) ? savedApplications.filter(app => typeof app?.company === 'string') : [];
+  const usedIds = new Set();
+  return {
+    profile: { resumeText, keywords,
+      levels: Object.fromEntries(Object.entries(old.levels ?? {}).filter(([, level]) => [0, 1, 2, 3].includes(level))),
+      jobBoard: normalizeJobBoard(old.jobBoard),
+      preferences: Object.fromEntries(Object.keys(PREFERENCES).map(key =>
+      [key, Array.isArray(old.preferences?.[key]) ? old.preferences[key].filter(value => typeof value === 'string' && value.trim()) : []])) },
+    applications: applications.map((app, index) => {
+      let id = typeof app.id === 'string' && app.id ? app.id : 'legacy-' + index;
+      while (usedIds.has(id)) id += '-copy';
+      usedIds.add(id);
+      return {
+        ...app, id, source: app.source ?? (app.jd ? 'jd' : 'manual'),
+        industry: app.industry ?? '', notes: app.notes ?? '',
+        matchScore: Number.isFinite(app.matchScore) ? app.matchScore : null,
+        offer: {
+          salary: numericValue(app.offer?.salary, 0),
+          costIndex: numericValue(app.offer?.costIndex, 0),
+          scores: Object.fromEntries(WK.filter(([key]) => key !== 'salary').map(([key]) =>
+            [key, numericValue((app.offer?.scores ?? app.offer?.s)?.[key], 5, 10)]))
+        }
+      };
+    }),
+    weights: Object.fromEntries(WK.map(([key]) => [key, numericValue(data.weights?.[key], 5, 10)])),
+    jdDraft: typeof data.jdDraft === 'string' ? data.jdDraft : '',
+    lastAnalysis: validAnalysis(data.lastAnalysis, data.jdDraft) ? data.lastAnalysis : null,
+    analyses: Array.isArray(data.analyses) ? data.analyses.filter(result => validAnalysis(result, result?.jd)) : [],
+    jobLink: typeof data.jobLink?.jd === 'string' && safeLink(data.jobLink.url) ? data.jobLink : null,
+    rewrite: data.rewrite && typeof data.rewrite.jd === 'string' && typeof data.rewrite.source === 'string'
+      && Array.isArray(data.rewrite.edits) && data.rewrite.edits.every(edit => typeof edit === 'string') ? {
+        ...data.rewrite, decisions: Object.fromEntries(Object.entries(data.rewrite.decisions ?? {})
+          .filter(([key, decision]) => /^\d+$/.test(key) && ['accept', 'reject'].includes(decision))),
+        origins: Array.isArray(data.rewrite.origins) ? data.rewrite.origins.filter(Number.isInteger) : []
+      } : null,
+    preparation: data.preparation && typeof data.preparation.jd === 'string' && typeof data.preparation.source === 'string'
+      && ['local', 'model'].includes(data.preparation.mode) ? data.preparation : null,
+    offerPair: Array.isArray(data.offerPair) ? data.offerPair.filter(id => typeof id === 'string').slice(0, 2) : []
+  };
+}
+
+function numericValue(value, fallback, max = Infinity) {
+  return Number.isFinite(value) ? Math.min(max, Math.max(0, value)) : fallback;
+}
+
+function validAnalysis(result, draft) {
+  return typeof draft === 'string' && result?.jd === draft.trim()
+    && Array.isArray(result.dims) && result.dims.length === K.length
+    && result.dims.every(value => value === null || Number.isFinite(value))
+    && (result.total === null || Number.isFinite(result.total))
+    && result.job && Array.isArray(result.gaps) && result.gaps.every(gap => typeof gap?.w === 'string')
+    && Array.isArray(result.tips) && result.tips.every(tip => typeof tip?.from === 'string');
+}
+
+const databaseMode = location.protocol === 'http:' && location.hostname === '127.0.0.1' && location.pathname === '/';
+const pendingKey = 'oc-db-pending';
+let state;
+let personalState;
+let demoState;
+let demo = false;
+let ready = false;
+let tab;
+let showRecommendations = false;
+let parseRevision = 0;
+let applicationNotice = '';
+let revision = 0;
+let pending = null;
+let inFlight = null;
+let lastAttempt = null;
+let saveTimer;
+let conflict = false;
+let databaseStatus = '已连接本地数据库';
+let retryVisible = false;
+
+function renderStorageStatus() {
+  $('#storage-status').textContent = demo ? '演示模式 · 这里的改动仅用于体验。' : databaseStatus;
+  $('#retry-save').hidden = demo || !retryVisible;
+  $('#reload-database').hidden = demo || !conflict;
+  $('#data-tools').hidden = demo || !ready;
+}
+
+function rememberPending() {
+  try { localStorage.setItem(pendingKey, JSON.stringify(pending)); }
+  catch {}
+}
+
+function clearPending(update) {
+  try {
+    if (readLocal(pendingKey)?.id === update.id) localStorage.removeItem(pendingKey);
+  } catch {}
+}
+
+function save() {
+  if (demo) return;
+  if (!databaseMode) {
+    try {
+      localStorage.setItem('oc', JSON.stringify(state));
+      databaseStatus = '已保存到当前浏览器。使用启动脚本可进入数据库版。';
+    } catch {
+      databaseStatus = '浏览器保存失败。关闭页面前可导出备份。';
+    }
+    renderStorageStatus();
+    return;
+  }
+  pending = {
+    id: crypto.randomUUID(), revision, after: inFlight?.id ?? lastAttempt?.id ?? pending?.after ?? null,
+    data: JSON.parse(JSON.stringify(state))
+  };
+  rememberPending();
+  if (!conflict) {
+    databaseStatus = '正在保存到本地数据库…';
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(flushWorkspace, 250);
+  }
+  renderStorageStatus();
+}
+
+async function flushWorkspace() {
+  if (!pending || inFlight || conflict) return;
+  const update = inFlight = lastAttempt = pending;
+  let saved = false;
+  try {
+    const body = JSON.stringify(update);
+    const response = await fetch('/api/workspace', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' }, body,
+      keepalive: new Blob([body]).size < 60 * 1024
+    });
+    if (response.status === 409) {
+      markConflict();
+      return;
+    }
+    if (!response.ok) throw new Error('Save failed');
+    revision = (await response.json()).revision;
+    saved = true;
+    lastAttempt = null;
+    retryVisible = false;
+    if (pending.id === update.id) {
+      clearPending(update);
+      pending = null;
+      databaseStatus = '已保存到本地数据库';
+    } else {
+      pending.revision = revision;
+      pending.after = null;
+      rememberPending();
+    }
+  } catch {
+    retryVisible = true;
+    databaseStatus = '本地数据库暂未保存。请确认启动窗口仍在运行，然后重试。';
+  } finally {
+    inFlight = null;
+    renderStorageStatus();
+    if (saved && pending) flushWorkspace();
+  }
+}
+
+function markConflict() {
+  conflict = true;
+  retryVisible = false;
+  databaseStatus = '数据库已被另一个页面更新。可导出此页备份，再加载数据库版本。';
+}
+
+async function readDatabase() {
+  const response = await fetch('/api/workspace', { cache: 'no-store' });
+  if (!response.ok) throw new Error('Read failed');
+  return response.json();
+}
+
+async function openWorkspace() {
+  try {
+    if (databaseMode) {
+      const saved = await readDatabase();
+      revision = saved.revision;
+      const queued = readLocal(pendingKey);
+      if (queued?.id && queued.id === saved.id) clearPending(queued);
+      else if (queued?.id && queued.data) {
+        pending = queued;
+        if (queued.revision !== revision && (!saved.id || queued.after !== saved.id)) markConflict();
+        else databaseStatus = '正在恢复上次的改动…';
+      }
+      state = normalizeWorkspace(pending?.data ?? saved.data);
+    } else {
+      state = normalizeWorkspace(readLocal('oc'));
+      databaseStatus = '当前为 HTML 文件模式。使用启动脚本可进入数据库版。';
+    }
+    personalState = state;
+    ready = true;
+    $('nav').hidden = false;
+    for (const id of ['demo-toggle', 'export-workspace', 'import-workspace']) $('#' + id).disabled = false;
+    renderStorageStatus();
+    go(state.jdDraft ? 'j' : 'p');
+    if (pending && !conflict) flushWorkspace();
+  } catch {
+    databaseStatus = '无法读取本地数据库。请确认启动窗口仍在运行，再刷新页面。';
+    renderStorageStatus();
+  }
+}
+
+$('#retry-save').onclick = flushWorkspace;
+$('#reload-database').onclick = async () => {
+  if (!window.confirm('加载数据库版本会放弃本页未保存的修改。已导出备份后再继续。')) return;
+  try {
+    const saved = await readDatabase();
+    if (pending) clearPending(pending);
+    pending = lastAttempt = null;
+    conflict = false;
+    revision = saved.revision;
+    state = personalState = normalizeWorkspace(saved.data);
+    databaseStatus = '已加载本地数据库';
+    renderStorageStatus();
+    go(tab, true);
+  } catch {
+    databaseStatus = '读取数据库失败。本页的改动仍可导出。';
+    renderStorageStatus();
+  }
+};
+
+$('#export-workspace').onclick = () => {
+  const url = URL.createObjectURL(new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'offer-compass-backup.json';
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  $('#backup-status').textContent = '备份包含当前档案、JD 分析、投递记录和天平设置。';
+};
+
+$('#import-workspace').onclick = () => $('#workspace-file').click();
+$('#workspace-file').onchange = async event => {
+  const file = event.target.files[0];
+  event.target.value = '';
+  if (!file) return;
+  const status = $('#backup-status');
+  try {
+    if (file.size > 32 * 1024 * 1024) throw new Error('Backup too large');
+    const data = JSON.parse(await file.text());
+    if (!data?.profile || !Array.isArray(data.applications ?? data.apps) || !data.weights) {
+      throw new Error('Invalid backup');
+    }
+    if (demo) return;
+    if (conflict) {
+      status.textContent = '请先处理数据库版本冲突，再导入备份。';
+      return;
+    }
+    if (!window.confirm('导入备份会替换当前档案、分析、投递和天平设置，继续吗？')) return;
+    state = personalState = normalizeWorkspace(data);
+    save();
+    go(state.jdDraft ? 'j' : 'p', true);
+    status.textContent = '已载入备份。';
+  } catch {
+    status.textContent = '无法读取备份。请选择 Offer Compass 导出的 JSON 文件。';
+  }
+};
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') flushWorkspace();
+});
+
+function evidenceMap(profile) {
+  const evidence = new Map();
+  for (const key of Object.keys(GROUPS)) {
+    if (key === 'honors') continue;
+    for (const item of profile.keywords[key]) {
+      const word = normalize(canonical(item.word));
+      evidence.set(word, Math.max(evidence.get(word) ?? 0, item.evidence === 'strong' ? 1 : 0.5));
+    }
+  }
+  return evidence;
+}
+
+const FAMILIES = [
+  ['产品经理', ['需求分析', '产品设计', 'PRD'], ['用户研究', '数据分析', '推动', '沟通']],
+  ['数据分析', ['数据分析', 'SQL', 'Python'], ['统计', 'Excel', '数据看板', 'Tableau']],
+  ['网络安全', ['网络安全', '渗透测试', '应急响应'], ['Linux', 'Python', 'Wireshark', 'Burp Suite']],
+  ['用户与内容运营', ['运营', '用户运营', '内容创作'], ['增长', '数据分析', '社区', '沟通']],
+  ['软件开发', ['软件开发', '接口开发', 'Git'], ['Java', 'JavaScript', 'Python', 'SQL', 'Docker']],
+  ['视觉与交互设计', ['交互设计', '视觉设计', 'Figma'], ['用户研究', '产品设计', 'Photoshop', '沟通']],
+  ['市场营销', ['市场调研', '广告', '内容创作'], ['增长', '策略', '商业化', '数据分析']],
+  ['人力资源', ['招聘', '沟通', '协作'], ['项目管理', 'Excel', '推动', '问题解决']]
+];
+
+function recommend(profile) {
+  const evidence = evidenceMap(profile);
+  return FAMILIES.map(([name, core, other]) => {
+    const words = [...core, ...other];
+    const hit = words.filter(word => evidence.has(normalize(word)));
+    const score = words.reduce((sum, word) => sum + (evidence.get(normalize(word)) ?? 0) * (core.includes(word) ? 2 : 1), 0);
+    return {
+      name, hit, score: Math.round(score / (core.length * 2 + other.length) * 100),
+      gaps: words.filter(word => (evidence.get(normalize(word)) ?? 0) < 1)
+        .slice(0, 3).map(word => evidence.has(normalize(word)) ? word + '（待补经历）' : word)
+    };
+  }).sort((a, b) => b.score - a.score).slice(0, 3);
+}
+
+const CITY_NAMES = '北京 上海 广州 深圳 杭州 成都 重庆 南京 苏州 武汉 西安 长沙 郑州 合肥 天津 宁波 青岛 济南 厦门 福州 昆明 南昌 东莞 佛山 珠海 无锡 常州 南通 温州 嘉兴 哈尔滨 沈阳 大连 长春 石家庄 太原 海口 三亚 贵阳 南宁 兰州 乌鲁木齐 香港 澳门 台北 新加坡 远程'.split(' ');
+const JD_LABELS = {
+  company: '招聘公司|公司名称|用人单位|公司|企业|雇主|company',
+  role: '招聘岗位|岗位名称|职位名称|职位|岗位|职务|role|position',
+  industry: '所属行业|行业|industry',
+  city: '工作城市|工作地点|工作地|工作地址|城市|地点|location|city'
+};
+const INFO_FIELDS = { company: '公司', role: '岗位', industry: '行业', city: '城市' };
+const INFO_LINE = new RegExp('(?:^|[\\n;|,，]|\\s+)(?:' + Object.values(JD_LABELS).join('|') + ')\\s*:', 'giu');
+const JOB_FIELD_LINE = new RegExp('^(?:' + Object.values(JD_LABELS).join('|') + ')\\s*:', 'iu');
+
+function extractJob(jd) {
+  const text = jd.normalize('NFKC');
+  const labels = [...text.matchAll(INFO_LINE)];
+  const job = {};
+  for (const [key, names] of Object.entries(JD_LABELS)) {
+    const index = labels.findIndex(label => new RegExp('^(?:' + names + ')\\s*:$', 'iu')
+      .test(label[0].replace(/^[;|,，\s]+/, '')));
+    const match = labels[index];
+    job[key] = match ? text.slice(match.index + match[0].length, labels[index + 1]?.index)
+      .split(/[\n;|]/, 1)[0].replace(/[,，]\s*$/, '').trim() : '';
+  }
+  const first = text.split('\n').find(line => line.trim())?.trim() ?? '';
+  if (!job.role && !labels.some(label => label.index === 0) && /工程师|经理|专员|分析师|实习|设计师|顾问|开发岗|运营岗/u.test(first) && first.length <= 60) {
+    job.role = first;
+  }
+  if (!job.city) job.city = CITY_NAMES.filter(city => text.includes(city)).join('、');
+  if (!job.industry) {
+    const industry = DICT[2].find(([word]) => TERM_PATTERNS.get(word).test(normalize(text)));
+    job.industry = industry?.[0] ?? '';
+  }
+  return job;
+}
+
+function scoringTerms(profile) {
+  const customSkills = [...gradedSkills(profile).values()].filter(word => !TERM_PATTERNS.has(word));
+  return DICT.map((terms, index) => [...terms, ...(index === 1 ? customSkills.map(word => [word]) : [])]);
+}
+
+function jdRequirements(jd, job, patterns) {
+  const requirements = new Map();
+  const optional = /优先|加分|了解|preferred|nice to have|bonus/iu;
+  const required = /必备|必须|熟悉|要求|required|must/iu;
+  let defaultWeight = 1;
+  for (const raw of jd.normalize('NFKC').split(/\r?\n/)) {
+    const line = raw.trim().replace(/^[-•·]\s*/, '');
+    if (!line || JOB_FIELD_LINE.test(line) || line === job.role) continue;
+    if (/^(?:加分项|优先条件|任职要求|岗位要求|招聘要求|技能要求|职位要求|职责|岗位职责|必备条件|preferred|required)\s*(?::|$)/iu.test(line)) {
+      defaultWeight = optional.test(line.split(':')[0]) ? 0.5 : 1;
+    }
+    let clauseWeight = defaultWeight;
+    for (const clause of line.split(/[。；;，,！？!?]/u)) {
+      if (optional.test(clause)) clauseWeight = 0.5;
+      else if (required.test(clause)) clauseWeight = 1;
+      const content = normalize(clause);
+      const cues = LEVEL_WORDS.filter(([, terms]) => new RegExp(terms, 'u').test(content));
+      const occurrences = [...patterns].flatMap(([word, pattern]) =>
+        [...content.matchAll(new RegExp(pattern.source, 'gu'))].map(match =>
+          ({ word, start: match.index, end: match.index + match[0].length })));
+      const distinct = new Set(occurrences.filter(item => !occurrences.some(other => other.word !== item.word
+        && other.start <= item.start && other.end >= item.end
+        && other.end - other.start > item.end - item.start)).map(item => item.word));
+      for (const [word, pattern] of patterns) {
+        if (!distinct.has(word)) continue;
+        const level = statedLevel(content, pattern) || (cues.length === 1 ? cues[0][0] : 0);
+        const previous = requirements.get(word);
+        if (!previous || previous.weight < clauseWeight) requirements.set(word, { weight: clauseWeight, level });
+        else if (previous.weight === clauseWeight) previous.level = Math.max(previous.level, level);
+      }
+    }
+  }
+  return requirements;
+}
+
+// 固定分析接口供后续替换。null 表示该维度或整份 JD 没有可识别的要求。
+function analyzeJD(jd, profile) {
+  const job = extractJob(jd);
+  const evidence = evidenceMap(profile);
+  const dimensions = scoringTerms(profile);
+  const patterns = new Map(dimensions.flat().map(([word]) => [word, TERM_PATTERNS.get(word) ?? keywordPattern([word])]));
+  const requirements = jdRequirements(jd, job, patterns);
+  const levels = resumeLevels(profile);
+  const gaps = [];
+  const dims = dimensions.map((terms, index) => {
+    let sum = 0;
+    let possible = 0;
+    for (const [word] of terms) {
+      const requirement = requirements.get(word);
+      if (!requirement) continue;
+      const { weight } = requirement;
+      const key = normalize(word);
+      const proof = evidence.get(key) ?? 0;
+      const graded = TOOLS.has(word) || LANGUAGES.has(word) || levels.has(key);
+      const target = graded ? requirement.level || (weight === 1 ? 2 : 1) : 0;
+      const actual = levels.get(key) ?? 0;
+      const strength = target && proof ? (actual ? Math.min(1, actual / target) : Math.min(.75, proof)) : proof;
+      possible += weight;
+      sum += weight * strength;
+      if (strength < 1) gaps.push({ w: word, dim: K[index], weight, strength, target, actual });
+    }
+    return possible ? sum / possible * 100 : null;
+  });
+  const scored = dims.filter(score => score !== null);
+  const total = scored.length ? Math.round(scored.reduce((sum, value) => sum + value, 0) / scored.length) : null;
+  gaps.sort((a, b) => b.weight - a.weight || a.strength - b.strength);
+  const honor = profile.keywords.honors[0];
+  const lines = Object.entries(resumeSections(profile.resumeText ?? ''))
+    .flatMap(([section, content]) => section === 'honors' ? [] : content);
+  const tips = gaps.slice(0, honor ? 4 : 5).map(gap => {
+    const original = gap.strength && lines.find(line => patterns.get(gap.w).test(normalize(line)));
+    const academic = EDUCATION_FACTS.has(gap.w);
+    return {
+      from: original ? original.slice(0, 90) + (original.length > 90 ? '…' : '') :
+        gap.strength ? '仅有「' + gap.w + '」关键词' : '档案中未识别到「' + gap.w + '」',
+      to: academic ? '如符合要求，请在教育背景中写明相应的学历、专业或毕业时间。' :
+        gap.target && gap.strength ? '核对档案中的「' + gap.w + '」等级，并用实际经历或证书说明熟练程度。' :
+        '如有真实经历，可写成「在〔项目或实习〕中用' + gap.w + '完成〔任务〕，取得〔结果〕」。',
+      why: (gap.weight === 1 ? '必备' : '加分') + ' · ' + gap.dim +
+        (academic ? ' · 教育背景中缺少对应信息' : gap.target ? ' · 岗位等级 ' + LEVELS[gap.target] : ' · 当前缺少项目或实习证据')
+    };
+  });
+  if (honor) tips.push({
+    from: '档案亮点 · ' + honor.word,
+    to: '可放在「荣誉奖项」小节。若与项目直接相关，也可补充在该项目条目后。',
+    why: '让奖项和对应经历更容易找到。'
+  });
+  return { dims: dims.map(score => score === null ? null : Math.round(score)), total, gaps: gaps.slice(0, 8), tips, job };
+}
+
+const SAMPLE = [
+  '教育背景', '统计学本科 · 2026 届应届毕业生',
+  '专业技能', 'Python、Excel、Figma、英语 CET-6',
+  '核心能力', '逻辑思维、跨部门沟通与协作',
+  '项目经历', '用 MySQL 进行数据分析，搭建留存数据看板，定位用户流失环节。',
+  '实习经历', '在电商团队梳理需求，编写 PRD，并推动埋点与 A/B 测试上线。',
+  '荣誉奖项', '校级优秀学生奖学金'
+].join('\n');
+
+function createDemoWorkspace() {
+  const sample = normalizeWorkspace({
+    profile: { resumeText: SAMPLE },
+    weights: { salary: 8, city: 6, cost: 7, growth: 9, stability: 5, interest: 8 }
+  });
+  const jobs = [
+    ['星屿数据（模拟）', '数据分析师', '电商', '杭州', 'offer', '统计学本科，熟悉 SQL、数据分析和数据看板；了解 Python 优先。', '电商留存分析方向，有分析师带教。', [22, 5.2, 8, 9, 7, 9]],
+    ['澄川科技（模拟）', '产品分析师', 'SaaS', '上海', 'offer', '熟悉需求分析、SQL、埋点与 A/B 测试；熟悉 PRD。', '参与产品实验设计，跨团队协作较多。', [26, 8.4, 7, 8, 7, 8]],
+    ['青禾商业（模拟）', '用户增长分析师', '互联网', '成都', 'offer', '熟悉 Excel、数据分析、用户增长；有沟通和协作能力。', '生活成本较低，可独立负责留存指标。', [19, 3.8, 9, 7, 8, 8]],
+    ['远岚互动（模拟）', '用户运营专员', '社区', '深圳', 'interview', '熟悉运营、用户研究和数据分析；了解埋点。', '已约业务面，准备复盘留存项目。'],
+    ['麦湾研究（模拟）', '商业分析实习生', '电商', '北京', 'applied', '统计学本科，熟悉 SQL、Python、Excel 和市场调研。', '通过官网投递，等待反馈。'],
+    ['拾光产品（模拟）', '产品经理助理', 'SaaS', '苏州', 'intent', '熟悉需求分析、PRD 和 Figma；了解用户访谈。', '待补一份产品需求案例。']
+  ];
+  sample.applications = jobs.map(([company, role, industry, city, status, requirements, notes, terms], index) => {
+    const jd = ['公司：' + company, '岗位：' + role, '行业：' + industry,
+      '城市：' + city, '任职要求：' + requirements].join('\n');
+    const [salary, costIndex, cityScore, growth, stability, interest] = terms ?? [0, 0, 5, 5, 5, 5];
+    return {
+      id: 'demo-' + index, company, role, industry, city, status, notes, source: 'jd', jd,
+      matchScore: analyzeJD(jd, sample.profile).total,
+      offer: { salary, costIndex, scores: { city: cityScore, cost: 5, growth, stability, interest } }
+    };
+  });
+  sample.jdDraft = sample.applications[0].jd;
+  sample.analyses = sample.applications.map(app => ({ ...analyzeJD(app.jd, sample.profile), jd: app.jd }));
+  sample.lastAnalysis = sample.analyses[0];
+  return sample;
+}
+
+$('#demo-toggle').onclick = () => {
+  if (!demo) {
+    personalState = state;
+    demoState = createDemoWorkspace();
+  }
+  demo = !demo;
+  state = demo ? demoState : personalState;
+  $('#demo-toggle').textContent = demo ? '返回我的数据' : '体验演示数据';
+  applicationNotice = '';
+  renderStorageStatus();
+  go(state.jdDraft ? 'j' : 'p', true);
+};
+
+const PDF_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/6.4.299/';
+const DOCX_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.13.0/mammoth.browser.min.js';
+const PARSE_ERROR = '未能读取文字，请改用粘贴文本';
+const parserLoads = new Map();
+
+function loadParser(url, globalName, type) {
+  if (window[globalName]) return Promise.resolve(window[globalName]);
+  if (!parserLoads.has(url)) {
+    const pending = new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      const finish = () => {
+        clearTimeout(timer);
+        script.remove();
+        const library = window[globalName];
+        if (library) resolve(library);
+        else reject(new Error(PARSE_ERROR));
+      };
+      const timer = setTimeout(finish, 10000);
+      if (type) script.type = type;
+      script.src = url;
+      script.onload = finish;
+      script.onerror = finish;
+      document.head.append(script);
+    }).finally(() => parserLoads.delete(url));
+    parserLoads.set(url, pending);
+  }
+  return parserLoads.get(url);
+}
+
+async function readResumeFile(file, extension) {
+  const data = await file.arrayBuffer();
+  if (extension === 'docx') {
+    const mammoth = await loadParser(DOCX_CDN, 'mammoth');
+    return (await mammoth.extractRawText({ arrayBuffer: data })).value;
+  }
+  const task = await resumePdfTask(data);
+  try {
+    const pdf = await task.promise;
+    const pages = [];
+    for (let index = 1; index <= pdf.numPages; index++) {
+      const page = await pdf.getPage(index);
+      pages.push((await pdfPageLines(page)).map(line => line.text).join('\n'));
+      page.cleanup();
+    }
+    return pages.join('\n').normalize('NFKC');
+  } finally {
+    await task.destroy();
+  }
+}
+
+async function resumePdfTask(data) {
+  const pdfjs = await loadParser(PDF_CDN + 'pdf.min.mjs', 'pdfjsLib', 'module');
+  pdfjs.GlobalWorkerOptions.workerSrc = PDF_CDN + 'pdf.worker.min.mjs';
+  return pdfjs.getDocument({ data, isEvalSupported: false, useWasm: false, verbosity: 0 });
+}
+
+async function pdfPageLines(page) {
+  const content = await page.getTextContent();
+  const lines = [{ text: '', items: [] }];
+  let previous;
+  for (const item of content.items) {
+    if (typeof item.str !== 'string') continue;
+    let current = lines[lines.length - 1];
+    if (previous && !previous.hasEOL && item.str) {
+      const [x, y] = item.transform.slice(4);
+      const [lastX, lastY] = previous.transform.slice(4);
+      if (Math.abs(y - lastY) > 3) {
+        current = { text: '', items: [] };
+        lines.push(current);
+      } else if (x - lastX - previous.width > 1) current.text += ' ';
+    }
+    current.text += item.str;
+    if (item.str.trim()) current.items.push(item);
+    if (item.hasEOL) lines.push({ text: '', items: [] });
+    previous = item;
+  }
+  return lines;
+}
+
+async function originalResume(source, file) {
+  const db = await new Promise((resolve, reject) => {
+    const request = indexedDB.open('offer-compass-resume', 1);
+    request.onupgradeneeded = () => request.result.createObjectStore('original');
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+  try {
+    return await new Promise((resolve, reject) => {
+      const transaction = db.transaction('original', file ? 'readwrite' : 'readonly');
+      const store = transaction.objectStore('original');
+      const request = file ? store.put({ source, file }, 'resume') : store.get('resume');
+      transaction.oncomplete = () => resolve(file || (request.result?.source === source ? request.result.file : null));
+      transaction.onerror = () => reject(transaction.error);
+      transaction.onabort = () => reject(transaction.error);
+    });
+  } finally {
+    db.close();
+  }
+}
+
+const hasProfile = () => state.profile.resumeText.trim() || Object.values(state.profile.keywords).some(items => items.length);
+const hasPreferences = () => Object.values(state.profile.preferences).some(items => items.length);
+
+function normalizeJobBoard(board) {
+  if (!board || typeof board.token !== 'string' || !/^[a-z0-9_-]{1,80}$/i.test(board.token)) return null;
+  return { token: board.token, company: String(board.company ?? '').trim(), industry: String(board.industry ?? '').trim() };
+}
+
+function boardToken(value) {
+  if (/^[a-z0-9_-]{1,80}$/i.test(value)) return value;
+  try {
+    const url = new URL(value);
+    if (url.protocol === 'https:' && ['boards.greenhouse.io', 'job-boards.greenhouse.io'].includes(url.hostname)) {
+      return url.pathname.split('/')[1];
+    }
+  } catch {}
+  return '';
+}
+
+function safeLink(value) {
+  try {
+    const url = new URL(value);
+    if (url.protocol === 'https:') return url.href;
+  } catch {}
+  return '';
+}
+
+function jobDescription(html) {
+  const element = document.createElement('template');
+  if (typeof html !== 'string') return '';
+  if (html.includes('&lt;')) {
+    element.innerHTML = html;
+    html = element.content.textContent;
+  }
+  element.innerHTML = html.replace(/<(?:br\s*\/?|\/(?:p|li|div|h[1-6]|ul|ol))\s*>/gi, '$&\n');
+  element.content.querySelectorAll('script,style').forEach(node => node.remove());
+  return element.content.textContent.replace(/\n{3,}/g, '\n\n').trim();
+}
+
+const boardCache = new Map();
+
+async function readBoard(token) {
+  const response = await fetch('https://boards-api.greenhouse.io/v1/boards/' + encodeURIComponent(token) + '/jobs?content=true',
+    { credentials: 'omit', referrerPolicy: 'no-referrer', signal: AbortSignal.timeout(10000) });
+  if (!response.ok) throw new Error('招聘来源返回 ' + response.status);
+  const data = await response.json();
+  if (!Array.isArray(data.jobs)) throw new Error('招聘来源返回的数据格式有误');
+  return data.jobs.filter(job => typeof job?.title === 'string' && safeLink(job.absolute_url)).map(job => ({
+    role: job.title, city: job.location?.name ?? '', jd: jobDescription(job.content), url: safeLink(job.absolute_url)
+  }));
+}
+
+function matchesPreferences(job, preferences) {
+  const equivalents = {
+    '北京': 'beijing', '上海': 'shanghai', '广州': 'guangzhou', '深圳': 'shenzhen',
+    '杭州': 'hangzhou', '成都': 'chengdu', '香港': 'hong kong', '远程': 'remote',
+    '产品经理': 'product manager', '数据分析师': 'data analyst', '工程师': 'engineer',
+    '实习': 'intern', '设计师': 'designer', '软件开发': 'software developer'
+  };
+  return [['roles', job.role], ['industries', job.industry], ['cities', job.city]].every(([key, text]) => {
+    const target = normalize(text);
+    return !preferences[key].length || preferences[key].some(value => {
+      const term = normalize(value).replace(/市$/, '');
+      const alternate = equivalents[term];
+      return target.includes(term) || (alternate && target.includes(alternate));
+    });
+  });
+}
+
+function renderJobDiscovery() {
+  const area = $('#job-discovery');
+  if (!area) return;
+  const board = state.profile.jobBoard;
+  const preferences = state.profile.preferences;
+  const query = [...preferences.roles, ...preferences.industries, ...preferences.cities, '招聘 官网'].join(' ');
+  const search = 'https://www.baidu.com/s?wd=' + encodeURIComponent(query);
+  const cached = board && boardCache.get(board.token);
+  const postings = demo ? demoState.applications.map(app => ({ ...app })) :
+    (cached?.jobs ?? []).map(job => ({ ...job, company: board.company || board.token, industry: board.industry }));
+  const filtered = postings.filter(job => matchesPreferences(job, preferences));
+  const jobs = filtered.slice(0, 12);
+  area.innerHTML = `<h3>岗位发现</h3>
+    ${demo ? '<p class="m">以下为模拟岗位，可修改求职偏好体验筛选。</p>' : `<p class="m">连接企业公开招聘页后，按已填写的岗位、行业和城市自动筛选。</p>
+    <details id="job-source"><summary>配置招聘来源${board ? ' · ' + escapeHTML(board.company || board.token) : ''}</summary>
+      <form id="board-form" class="section-title"><div class="fields">
+        <label>Greenhouse 招聘页链接或 ID<input name="board" value="${escapeHTML(board?.token)}" required></label>
+        <label>公司显示名称<input name="company" value="${escapeHTML(board?.company)}"></label>
+        <label>所属行业<input name="industry" value="${escapeHTML(board?.industry)}" placeholder="按企业填写，如互联网"></label>
+      </div><div class="actions"><button>连接并查询</button>${board ? '<button type="button" id="remove-board">移除此来源</button>' : ''}</div>
+      <p class="m" id="board-error" role="status"></p></form>
+    </details>`}
+    ${board && !demo ? `<p class="m" role="status">${cached?.error ? escapeHTML(cached.error) : cached?.jobs
+      ? '已找到 ' + filtered.length + ' 个符合条件的岗位' + (filtered.length > jobs.length ? '，展示前 ' + jobs.length + ' 个。' : '。')
+      : '正在读取招聘来源…'}</p><button id="refresh-board" type="button">刷新岗位</button>` : ''}
+    ${jobs.map((job, index) => `<div class="tip">
+      <strong>${escapeHTML(job.role)}</strong><p class="m">${escapeHTML([job.company, job.city, job.industry].filter(Boolean).join(' · '))}</p>
+      <details><summary>查看 JD</summary><p class="original break">${escapeHTML(job.jd || '招聘来源未提供 JD 文字。')}</p></details>
+      <div class="actions section-title">
+        ${job.jd ? `<button type="button" data-job="${index}">分析此岗位</button>` : ''}
+        ${job.url ? `<a href="${escapeHTML(job.url)}" target="_blank" rel="noopener noreferrer">打开官方投递页</a>` : ''}
+      </div>
+    </div>`).join('')}
+    ${demo && !jobs.length ? '<p class="m">模拟岗位中暂无符合当前偏好的结果。</p>' : ''}
+    ${!demo && hasPreferences() ? `<p class="section-title"><a href="${escapeHTML(search)}" target="_blank" rel="noopener noreferrer">按偏好搜索招聘官网</a></p>` : ''}`;
+
+  area.querySelectorAll('[data-job]').forEach(button => {
+    button.onclick = () => {
+      const job = jobs[button.dataset.job];
+      const jd = demo ? job.jd : ['公司：' + job.company, '岗位：' + job.role, '城市：' + job.city,
+        '行业：' + job.industry, job.jd].join('\n');
+      if (hasProfile()) openAnalysis({ ...analyzeJD(jd, state.profile), jd, applicationUrl: job.url });
+      else {
+        state.jdDraft = jd;
+        state.lastAnalysis = null;
+        state.jobLink = { jd, url: job.url };
+        save();
+        go('j');
+      }
+    };
+  });
+  const form = $('#board-form');
+  if (!form) return;
+  form.onsubmit = event => {
+    event.preventDefault();
+    const data = new FormData(form);
+    const selected = normalizeJobBoard({ token: boardToken(data.get('board').trim()),
+      company: data.get('company'), industry: data.get('industry') });
+    if (!selected) {
+      $('#board-error').textContent = '请填写有效的 Greenhouse 企业招聘页链接或 ID。';
+      return;
+    }
+    state.profile.jobBoard = selected;
+    save();
+    loadJobDiscovery(true);
+  };
+  if (board) {
+    $('#refresh-board').onclick = () => loadJobDiscovery(true);
+    $('#remove-board').onclick = () => {
+      state.profile.jobBoard = null;
+      save();
+      renderJobDiscovery();
+    };
+  }
+}
+
+async function loadJobDiscovery(refresh = false) {
+  const board = !demo && state.profile.jobBoard;
+  if (!board || (!refresh && boardCache.has(board.token))) {
+    renderJobDiscovery();
+    return;
+  }
+  const request = {};
+  boardCache.set(board.token, request);
+  renderJobDiscovery();
+  try {
+    request.jobs = await readBoard(board.token);
+  } catch {
+    request.error = '暂时无法读取岗位。请检查招聘页 ID 或网络，再刷新岗位。';
+  }
+  if (!demo && tab === 'p' && state.profile.jobBoard?.token === board.token) renderJobDiscovery();
+}
+
+function go(next, refresh = false) {
+  if (tab === 'p' && next === 'p' && !refresh) return;
+  if (tab === 'p') {
+    parseRevision++;
+    showRecommendations = false;
+  }
+  tab = next;
+  document.querySelectorAll('nav button').forEach(button => {
+    const current = button.dataset.t === tab;
+    button.classList.toggle('on', current);
+    if (current) button.setAttribute('aria-current', 'page');
+    else button.removeAttribute('aria-current');
+  });
+  ({ p: renderProfile, j: renderJD, a: renderApplications, s: renderBalance })[tab]();
+}
+
+function renderRecommendations() {
+  const area = $('#recommendations');
+  const auto = !hasPreferences() && hasProfile();
+  if (!auto && !(tab === 'p' && showRecommendations)) {
+    area.replaceChildren();
+    return;
+  }
+  const rows = evidenceMap(state.profile).size ? recommend(state.profile) : [];
+  area.innerHTML = `<section class="card"><h3>职业推荐</h3>
+    <p class="m">推荐仅基于简历关键词，不代表职业判断。</p>
+    ${rows.length ? rows.map((row, index) => `<div class="tip">
+      <div class="hd"><strong>${row.name}</strong><strong>${row.score}%</strong></div>
+      <div>命中关键词 · ${row.hit.join('、') || '暂无'}</div>
+      <p class="m">主要缺口 · ${row.gaps.join('、') || '暂无'}</p>
+      <button type="button" data-prefer="${index}">设为偏好</button>
+    </div>`).join('') : '<p class="m">请先添加可识别的技能或经历标签。</p>'}</section>`;
+  area.querySelectorAll('[data-prefer]').forEach(button => {
+    button.onclick = () => {
+      const role = rows[button.dataset.prefer].name;
+      const roles = state.profile.preferences.roles;
+      if (!roles.includes(role)) roles.push(role);
+      showRecommendations = false;
+      save();
+      if (tab === 'p') $('#pref-roles').value = roles.join('、');
+      renderRecommendations();
+    };
+  });
+}
+
+function keywordLabel(section, item) {
+  if (section === 'honors') return '';
+  if (item.evidence === 'strong') return section === 'education' ? ' · 已注明' : ' · 有经历佐证';
+  return section === 'skills' ? ' · 技能自述' : ' · 已列出';
+}
+
+function renderKeywords() {
+  const area = $('#keywords');
+  area.innerHTML = Object.entries(GROUPS).map(([key, title]) => `<div class="section-title">
+    <strong>${title}${key === 'honors' ? ' · 亮点' : ''}</strong><div>
+    ${state.profile.keywords[key].map((item, index) => `<span class="tag break">
+      ${escapeHTML(item.word)}${keywordLabel(key, item)}
+      <button type="button" data-group="${key}" data-remove="${index}" aria-label="删除 ${escapeHTML(item.word)}">×</button>
+    </span>`).join('') || '<span class="m"> · 暂无标签</span>'}</div></div>`).join('');
+  area.querySelectorAll('[data-remove]').forEach(button => {
+    button.onclick = () => {
+      stopPendingUpload();
+      state.profile.keywords[button.dataset.group].splice(Number(button.dataset.remove), 1);
+      refreshProfile();
+      save();
+      $('#keyword-word').focus();
+    };
+  });
+}
+
+function renderSkillLevels() {
+  const area = $('#skill-levels');
+  const skills = [...gradedSkills(state.profile)];
+  const levels = resumeLevels(state.profile);
+  const unknown = skills.filter(([key]) => !levels.get(key)).length;
+  area.innerHTML = skills.length ? `<details class="section-title" ${unknown ? 'open' : ''}>
+    <summary>技能与语言等级${unknown ? ' · ' + unknown + ' 项待确认' : ''}</summary>
+    <p class="m">了解可完成基础操作，熟练可独立完成常见任务，精通可处理复杂任务或指导他人。待确认项会按已有经历暂计。</p>
+    <div class="fields">${skills.map(([key, word], index) => `<label>${escapeHTML(word)}
+      <select data-level="${index}">${LEVELS.map((name, value) =>
+        `<option value="${value}"${levels.get(key) === value ? ' selected' : ''}>${name}</option>`).join('')}</select>
+      </label>`).join('')}</div></details>` : '';
+  area.querySelectorAll('[data-level]').forEach(select => {
+    select.onchange = () => {
+      const [key] = skills[select.dataset.level];
+      state.profile.levels[key] = Number(select.value);
+      state.lastAnalysis = null;
+      save();
+      const left = [...area.querySelectorAll('[data-level]')].filter(input => input.value === '0').length;
+      area.querySelector('summary').textContent = '技能与语言等级' + (left ? ' · ' + left + ' 项待确认' : '');
+    };
+  });
+}
+
+function refreshProfile() {
+  state.lastAnalysis = null;
+  renderKeywords();
+  renderResumeStyle();
+  renderSkillLevels();
+  renderRecommendations();
+}
+
+function stopPendingUpload() {
+  parseRevision++;
+  $('#parse-status').hidden = true;
+}
+
+async function uploadResume(event) {
+  const file = event.target.files[0];
+  event.target.value = '';
+  if (!file) return;
+  const status = $('#parse-status');
+  const revision = ++parseRevision;
+  const extension = file.name.split('.').pop().toLowerCase();
+  if (!['pdf', 'docx'].includes(extension) || file.size > 10 * 1024 * 1024) {
+    status.textContent = file.size > 10 * 1024 * 1024 ? '文件超过 10 MB，请选择更小的文件或粘贴文本。' : '请选择 PDF 或 DOCX 文件。';
+    return;
+  }
+  if (hasProfile() && !window.confirm('用上传的简历替换当前简历文字和关键词？求职偏好会保留。')) {
+    status.textContent = '已保留当前档案。';
+    return;
+  }
+  status.textContent = '正在本机读取简历…';
+  try {
+    const text = (await readResumeFile(file, extension)).trim();
+    if ((text.match(/[\p{L}\p{N}]/gu) ?? []).length < 100) throw new Error(PARSE_ERROR);
+    if (revision !== parseRevision) return;
+    updateResume(text, true);
+    $('#resume-text').value = text;
+    refreshProfile();
+    status.textContent = '简历已读取，可以编辑下方关键词。';
+    if (!demo) {
+      originalResume(text, file).catch(() => {
+        if (revision === parseRevision) status.textContent = '简历已读取。原件可在审阅页重新关联。';
+      });
+    }
+    if (extension === 'docx') readWordPackage(file).then(pkg => {
+      if (revision === parseRevision) renderResumeStyle(wordLayout(pkg));
+    }).catch(() => {});
+  } catch {
+    if (revision === parseRevision) status.textContent = PARSE_ERROR;
+  }
+}
+
+function renderProfile() {
+  main.innerHTML = `<h2>我的档案</h2>
+    <div id="recommendations"></div>
+    <section class="card"><h3>简历</h3>
+      <label for="resume-file">上传简历（PDF 或 DOCX，最多 10 MB）</label>
+      <input id="resume-file" type="file" accept=".pdf,.docx">
+      <p class="m">文件在浏览器内读取。首次使用上传需要联网加载解析库。</p>
+      <p id="parse-status" class="notice" role="status" hidden></p>
+      <label for="resume-text">或粘贴简历文字</label>
+      <textarea id="resume-text" rows="8" placeholder="粘贴简历文字…">${escapeHTML(state.profile.resumeText)}</textarea>
+      <p id="resume-style" class="m"></p>
+    </section>
+    <section class="card"><h3>档案关键词</h3>
+      <p class="m">学历按教育背景匹配。技能与语言可补充等级，用于匹配 JD 中的能力要求。</p>
+      <div id="keywords"></div>
+      <div id="skill-levels"></div>
+      <form id="keyword-form" class="section-title">
+        <div class="fields">
+          <label>关键词<input id="keyword-word" placeholder="例如 MySQL" required></label>
+          <label>类别<select id="keyword-group">${Object.entries(GROUPS).map(([key, name]) =>
+            `<option value="${key}"${key === 'skills' ? ' selected' : ''}>${name}</option>`).join('')}</select></label>
+        </div>
+        <button>添加关键词</button><p class="m" id="keyword-status" role="status"></p>
+      </form>
+    </section>
+    <section class="card"><h3>求职偏好</h3><div class="fields">
+      ${Object.entries(PREFERENCES).map(([key, label]) => `<label>${label}<input id="pref-${key}" placeholder="多个用逗号分隔"
+        value="${escapeHTML(state.profile.preferences[key].join('、'))}"></label>`).join('')}
+    </div><button id="generate-recommendations" type="button">生成职业推荐</button></section>
+    <section class="card" id="job-discovery"></section>`;
+  renderKeywords();
+  renderResumeStyle();
+  renderSkillLevels();
+  renderRecommendations();
+  const status = $('#parse-status');
+  $('#resume-file').onchange = event => {
+    status.hidden = false;
+    uploadResume(event);
+  };
+  $('#resume-text').oninput = event => {
+    stopPendingUpload();
+    updateResume(event.target.value);
+    refreshProfile();
+  };
+  $('#keyword-form').onsubmit = event => {
+    event.preventDefault();
+    const input = $('#keyword-word');
+    const word = canonical(input.value);
+    if (!word) return;
+    let key = $('#keyword-group').value;
+    if (HONOR_WORDS.has(word)) key = 'honors';
+    const list = state.profile.keywords[key];
+    if (list.some(item => normalize(item.word) === normalize(word))) {
+      $('#keyword-status').textContent = '该类别已有此关键词。';
+      return;
+    }
+    stopPendingUpload();
+    list.push({ word, source: 'manual', evidence: keywordEvidence(key, word) });
+    refreshProfile();
+    save();
+    $('#keyword-status').textContent = '已添加「' + word + '」。';
+    input.value = '';
+    input.focus();
+  };
+  for (const key of Object.keys(PREFERENCES)) {
+    $('#pref-' + key).oninput = event => {
+      state.profile.preferences[key] = splitList(event.target.value);
+      showRecommendations = false;
+      save();
+      renderRecommendations();
+      renderJobDiscovery();
+    };
+  }
+  $('#generate-recommendations').onclick = () => {
+    showRecommendations = true;
+    renderRecommendations();
+    $('#recommendations').scrollIntoView({ block: 'start' });
+  };
+  loadJobDiscovery();
+}
+
+function radar(scores) {
+  const point = (index, score) => {
+    const angle = -Math.PI / 2 + index * 2 * Math.PI / 5;
+    return [160 + Math.cos(angle) * score, 138 + Math.sin(angle) * score];
+  };
+  const ring = score => K.map((_, index) => point(index, score).join(',')).join(' ');
+  const values = scores.map((score, index) => point(index, score ?? 100).join(',')).join(' ');
+  return `<svg viewBox="0 0 320 246" class="rd" aria-hidden="true">
+    ${[25, 50, 75, 100].map(score => `<polygon points="${ring(score)}" fill="none" stroke="var(--line)"/>`).join('')}
+    ${K.map((key, index) => {
+      const [x, y] = point(index, 100);
+      const [labelX, labelY] = point(index, 124);
+      return `<line x1="160" y1="138" x2="${x}" y2="${y}" stroke="var(--line)"/>
+        <text x="${labelX}" y="${labelY + 3}" text-anchor="middle" font-size="11" fill="var(--mut)">${key}</text>`;
+    }).join('')}
+    <polygon class="pg" style="transform-origin:160px 138px" points="${values}" fill="var(--acc)" fill-opacity=".25" stroke="var(--acc)" stroke-width="2"/>
+    ${scores.map((score, index) => {
+      const [x, y] = point(index, score ?? 100);
+      return `<circle cx="${x}" cy="${y}" r="4" fill="${score === null ? 'var(--card)' : fitBand(score).color}"
+        stroke="${fitBand(score).color}" stroke-width="2"/>`;
+    }).join('')}</svg>
+    <div aria-label="各维度适配程度">${K.map((label, index) => {
+      const score = scores[index];
+      const band = fitBand(score);
+      return `<div class="match-row" style="--tone:${band.color}"><span>${label}</span>
+        <div class="bar" aria-hidden="true"><i style="width:${score ?? 100}%"></i></div>
+        <b>${score === null ? band.label : score + ' · ' + band.label}</b></div>`;
+    }).join('')}</div>`;
+}
+
+function fitBand(score) {
+  if (score === null) return { label: '无要求 · 默认适配', color: 'var(--mut)' };
+  if (score >= 85) return { label: '高度适配', color: 'light-dark(#087560,#69d9b7)' };
+  if (score >= 65) return { label: '基本适配', color: 'var(--acc)' };
+  if (score >= 40) return { label: '部分适配', color: 'light-dark(#986000,#ffbf65)' };
+  return { label: '差距较大', color: 'light-dark(#b43851,#ff8ca4)' };
+}
+
+function rememberAnalysis(result) {
+  state.analyses = [result, ...state.analyses.filter(saved => saved.jd !== result.jd)];
+}
+
+function openAnalysis(result) {
+  state.jdDraft = result.jd;
+  state.lastAnalysis = result;
+  rememberAnalysis(result);
+  save();
+  go('j');
+}
+
+function renderJD() {
+  const profileReady = hasProfile();
+  const count = new Set(Object.values(state.profile.keywords).flat().map(item => normalize(item.word))).size;
+  main.innerHTML = `<h2>JD 分析</h2><div id="recommendations"></div>
+    ${profileReady && count < 5 ? '<p class="notice">档案信息较少，结果仅供参考</p>' : ''}
+    <label for="jd">岗位描述</label>
+    <textarea id="jd" rows="7" placeholder="粘贴岗位 JD…">${escapeHTML(state.jdDraft)}</textarea>
+    <button class="pri" id="analyze">${profileReady ? '分析匹配度' : '请先上传简历'}</button>
+    <button type="button" id="prepare-jd">准备这份投递</button>
+    <div id="analysis-history"></div><div id="out" aria-live="polite"></div>`;
+  renderRecommendations();
+  renderAnalysisHistory();
+  $('#jd').oninput = event => {
+    state.jdDraft = event.target.value;
+    state.lastAnalysis = null;
+    save();
+    $('#out').replaceChildren();
+  };
+  function runAnalysis() {
+    if (!profileReady) {
+      go('p');
+      $('#resume-file').focus();
+      return;
+    }
+    const jd = state.jdDraft.trim();
+    if (!jd) {
+      $('#out').innerHTML = '<p class="notice">请先粘贴岗位描述。</p>';
+      $('#jd').focus();
+      return;
+    }
+    const applicationUrl = state.jobLink?.jd === jd ? state.jobLink.url :
+      state.analyses.find(result => result.jd === jd)?.applicationUrl;
+    state.lastAnalysis = { ...analyzeJD(jd, state.profile), jd, applicationUrl };
+    rememberAnalysis(state.lastAnalysis);
+    save();
+    renderAnalysisHistory();
+    renderAnalysis(state.lastAnalysis);
+    return true;
+  }
+  $('#analyze').onclick = runAnalysis;
+  $('#prepare-jd').onclick = () => {
+    if (runAnalysis()) {
+      $('#show-preparation').click();
+      $('#preparation-panel').scrollIntoView({ block: 'start' });
+    }
+  };
+  if (state.lastAnalysis) renderAnalysis(state.lastAnalysis);
+}
+
+function renderAnalysisHistory() {
+  const history = $('#analysis-history');
+  if (!state.analyses.length) return;
+  history.innerHTML = `<details class="card"><summary>已保存的 JD 分析（${state.analyses.length}）</summary>
+    <label>历史岗位<select id="saved-analysis">${state.analyses.map((result, index) => {
+      const title = [result.job.company, result.job.role].filter(Boolean).join(' · ') || result.jd.slice(0, 60);
+      return `<option value="${index}">${escapeHTML(title)}</option>`;
+    }).join('')}</select></label>
+    <button id="restore-analysis" type="button">查看历史结果</button></details>`;
+  $('#restore-analysis').onclick = () => {
+    state.lastAnalysis = state.analyses[Number($('#saved-analysis').value)];
+    state.jdDraft = state.lastAnalysis.jd;
+    $('#jd').value = state.jdDraft;
+    renderAnalysis(state.lastAnalysis);
+    save();
+  };
+}
+
+function renderAnalysis(result) {
+  const missingLevel = result.gaps.some(gap => gap.target && gap.strength && !gap.actual);
+  $('#out').innerHTML = `<section class="card">
+    <div class="big">${result.total ?? '—'}<small>${result.total === null ? '未识别到评分要求' : '/100 匹配度 · ' + fitBand(result.total).label}</small></div>
+    ${radar(result.dims)}<p class="m">无要求项在雷达图上按默认适配显示。总分只计算 JD 提到的维度。</p>
+  </section>
+  <section class="card"><h3>岗位信息</h3><div class="fields">
+    ${Object.entries(INFO_FIELDS).map(([key, label]) => `<span class="break">${label} · ${escapeHTML(result.job[key] || '待补充')}</span>`).join('')}
+  </div>${officialLink(result.applicationUrl)}</section>
+  <section class="card"><h3>缺口清单</h3>${result.gaps.length ? result.gaps.map(gap =>
+    `<span class="tag">${escapeHTML(gap.w)} · ${gap.weight === 1 ? '必备' : '加分'} · ${gap.target
+      ? (gap.actual ? '当前' + LEVELS[gap.actual] : gap.strength ? '等级待确认' : '未匹配') + '／要求' + LEVELS[gap.target]
+      : gap.strength ? (EDUCATION_FACTS.has(gap.w) ? '待补教育信息' : '待补经历') : '未匹配'}</span>`).join('') :
+    `<p class="m">${result.total === null ? '未识别到可评估的要求。' : '已识别的要求均有对应的档案信息或经历佐证。'}</p>`}
+    ${missingLevel ? '<div class="section-title"><button id="complete-levels" type="button">补充能力等级</button></div>' : ''}</section>
+  <section class="card"><h3>投递准备与简历审阅</h3>
+    <div class="actions" role="group" aria-label="投递准备方式">
+      <button type="button" id="show-suggestions" aria-pressed="true">简历改写建议</button>
+      <button type="button" id="show-preparation" aria-pressed="false" title="先判断是否值得投；证据不足时追问，证据足够后再进入简历审阅">Agent 投递判断</button>
+      <button type="button" id="show-rewrite" aria-pressed="false">一键改写与审阅</button>
+    </div>
+    <div id="resume-suggestions" class="section-title">${result.tips.length ? result.tips.map(tip =>
+    `<div class="tip"><div class="m">${escapeHTML(tip.from)}</div>→ ${escapeHTML(tip.to)}<div class="m">${escapeHTML(tip.why)}</div></div>`).join('') :
+    '<p class="m">暂无建议。</p>'}</div><div id="preparation-panel" hidden></div><div id="rewrite-editor" hidden></div></section>
+  <section class="card"><h3>下一步</h3><div class="actions" role="group" aria-label="选择保存方式">
+    <button type="button" id="view-only" aria-pressed="true">只看匹配</button>
+    <button type="button" id="save-intent" aria-pressed="false">存为意向</button>
+    <button type="button" id="save-applied" aria-pressed="false">我已投递</button>
+  </div><div id="jd-entry"></div></section>`;
+  const entry = $('#jd-entry');
+  if (missingLevel) $('#complete-levels').onclick = () => {
+    go('p');
+    $('#skill-levels').scrollIntoView({ block: 'start' });
+    $('#skill-levels select')?.focus({ preventScroll: true });
+  };
+  $('#show-suggestions').onclick = () => switchRewrite('suggestions');
+  $('#show-preparation').onclick = () => {
+    switchRewrite('preparation');
+    renderPreparation(result);
+  };
+  $('#show-rewrite').onclick = () => {
+    switchRewrite('rewrite');
+    renderRewrite(result);
+  };
+  function choose(id) {
+    for (const action of ['view-only', 'save-intent', 'save-applied']) {
+      $('#' + action).setAttribute('aria-pressed', action === id ? 'true' : 'false');
+    }
+    entry.replaceChildren();
+  }
+  $('#view-only').onclick = () => choose('view-only');
+  $('#save-intent').onclick = () => {
+    choose('save-intent');
+    if (result.job.company && result.job.role) submitJD(entry, result, result.job, 'intent');
+    else showJDForm(entry, result, 'intent');
+  };
+  $('#save-applied').onclick = () => {
+    choose('save-applied');
+    showJDForm(entry, result, 'applied');
+  };
+}
+
+function switchRewrite(active) {
+  const panels = { suggestions: '#resume-suggestions', preparation: '#preparation-panel', rewrite: '#rewrite-editor' };
+  for (const [id, panel] of Object.entries(panels)) {
+    $('#show-' + id).setAttribute('aria-pressed', String(id === active));
+    $(panel).hidden = id !== active;
+  }
+}
+
+const DEFAULT_PREP_GOAL = '帮我判断这个岗位值不值得投。如果值得，准备一份定制简历草稿。';
+const VERDICTS = { apply: '建议投递', conditional: '有条件投递', hold: '建议暂缓' };
+
+function evidenceForJD(result, profile) {
+  const lines = profile.resumeText.split(/\r?\n/);
+  const terms = scoringTerms(profile).flat();
+  const patterns = new Map(terms.map(([word]) => [word, TERM_PATTERNS.get(word) ?? keywordPattern([word])]));
+  const requirements = jdRequirements(result.jd, result.job, patterns);
+  const sections = resumeSections(profile.resumeText);
+  const experience = new Set([...sections.projects, ...sections.experience].map(normalize));
+  const evidence = [];
+  for (const [word, requirement] of [...requirements].sort((a, b) => b[1].weight - a[1].weight)) {
+    const pattern = patterns.get(word);
+    const matches = lines.map((line, index) => ({ text: normalize(line), line: index + 1 }))
+      .filter(item => !/未参与|未做|尚未|没有使用|没做过|不了解|不熟悉/u.test(item.text) && pattern.test(item.text));
+    const work = matches.find(item => experience.has(item.text));
+    const match = work ?? matches[0];
+    if (match) evidence.push({ line: match.line, requirement: word, work: Boolean(work), required: requirement.weight === 1 });
+  }
+  return evidence.slice(0, 10);
+}
+
+function localPreparation(result, profile, task) {
+  const fresh = analyzeJD(result.jd, profile);
+  const evidence = evidenceForJD(result, profile);
+  const blocker = fresh.gaps.find(gap => gap.weight === 1 && (!gap.strength || (gap.target && !gap.actual)));
+  if (blocker && !task.answer && !task.skip) {
+    return { requirement: blocker.w, question: EDUCATION_FACTS.has(blocker.w)
+      ? '你目前是否符合「' + blocker.w + '」这项学历或专业要求？请说明可以写入简历的事实。'
+      : '对于「' + blocker.w + '」，你有可以写入简历的实际经历吗？请说明做过什么、你负责哪一部分，以及可确认的结果。' };
+  }
+  const confirmed = task.answer && task.confirmed && task.requirement === blocker?.w ? task.requirement : '';
+  const gaps = fresh.gaps.filter(gap => gap.w !== confirmed);
+  const verdict = !evidence.length && !confirmed ? 'hold' :
+    gaps.some(gap => gap.weight === 1) || fresh.total === null || (!confirmed && fresh.total < 80) ? 'conditional' : 'apply';
+  return { verdict, evidence, gaps: gaps.map(gap => gap.w), confirmed,
+    summary: verdict === 'apply' ? '主要岗位要求有简历原文或本次明确补充作为依据，可准备定制稿。' :
+      '已找到的证据列在下方，尚待确认的要求仍保留为缺口。' };
+}
+
+const REVIEW_DRAFT_VERSION = 3;
+
+function layoutAssessment(before, after, mode) {
+  const a = Array.from(String(before ?? '').trim()).length;
+  const b = Array.from(String(after ?? '').trim()).length;
+  const growth = a ? (b - a) / a : b ? 1 : 0;
+  const reasons = [];
+  if (mode === 'pdf_limited' && growth > .08) reasons.push('修改后文字增长超过 8%');
+  if (mode === 'pdf_limited' && String(after).split(/\r?\n/).length > String(before).split(/\r?\n/).length) reasons.push('修改后新增行数');
+  if (mode === 'text_draft') reasons.push('纯文本无法继承原始版式');
+  return { layoutRisk: reasons.length > 0, lengthBefore: a, lengthAfter: b, reasons };
+}
+
+function evidenceRewrite(line, requirement, jd) {
+  const text = line.trim();
+  const wantsAnalysis = /数据分析|数据清洗|Excel|SQL|指标|漏斗|留存|转化/u.test(requirement + ' ' + jd);
+  if (wantsAnalysis && /广告负反馈治理/u.test(text) && /2,?149|SQL|Excel/u.test(text)) {
+    return line
+      .replace(/广告负反馈治理[：:]/u, '广告负反馈治理与数据分析：')
+      .replace(/对\s*2,?149\s*条广告体验反馈进行清洗、归因及标签化/u,
+        '清洗、归因及标签化 2,149 条广告体验反馈')
+      .replace(/进一步结合\s*SQL\s*与\s*Excel[，,]从/u,
+        '并使用 SQL 与 Excel 从')
+      .replace(/交叉分析曝光、CTR、eCPM\s*与负反馈率/u,
+        '对曝光、CTR、eCPM 与负反馈率开展交叉分析');
+  }
+  if (/PRD|需求|流程|协同|推动/u.test(requirement + ' ' + jd) &&
+      /一键返回能力建设/u.test(text) && /PRD|流程图|策略配置/u.test(text)) {
+    return line.replace(/一键返回能力建设[：:]/u, '一键返回产品能力建设：')
+      .replace(/输出\s*PRD、业务流程图和策略配置方案/u,
+        '沉淀 PRD、业务流程图与策略配置方案');
+  }
+  return line.replace(/^(\s*(?:[-•●▪·]\s*)?)(?:在该项目中|在实习期间)[，,:：]\s*/u, '$1')
+    .replace(/^(\s*(?:[-•●▪·]\s*)?)(?:本人主要负责|本人负责|主要负责)/u, '$1负责')
+    .replace(/^(\s*(?:[-•●▪·]\s*)?)(?:本人主要参与|本人参与|主要参与)/u, '$1参与');
+}
+
+function reviewDraft(result, source, evidence, addition = '') {
+  const originals = source.split(/\r?\n/);
+  const references = Object.fromEntries(evidence.map(item => [item.line, item.requirement]));
+  const jd = result.jd || '';
+  if (/数据分析|数据清洗|Excel|SQL|指标|漏斗|留存|转化/u.test(jd)) {
+    const analysisLine = originals.findIndex(line => /广告负反馈治理/u.test(line) && /2,?149|SQL|Excel/u.test(line));
+    if (analysisLine >= 0) references[analysisLine + 1] = '数据分析 · 用已有反馈数据、工具、指标和结论强化证据';
+  }
+  if (/PRD|需求文档|流程图|协同|推动/u.test(jd)) {
+    const productLine = originals.findIndex(line => /一键返回能力建设/u.test(line) && /PRD|流程图|策略配置/u.test(line));
+    if (productLine >= 0) references[productLine + 1] = '产品能力 · 用已有 PRD、流程和上线协同强化证据';
+  }
+  const summary = addition.trim() ? '补充经历\n' + addition.trim() : '';
+  const edits = originals.map((line, index) => {
+    if (!Object.hasOwn(references, index + 1)) return line;
+    return evidenceRewrite(line, references[index + 1], jd);
+  });
+  return { version: REVIEW_DRAFT_VERSION, jd: result.jd, source, edits: [summary, ...edits], decisions: {}, origins: [],
+    references: { ...references, 0: summary ? '本次由你补充的原话' : '' } };
+}
+
+function samePreparation(item, result, source = state.profile.resumeText) {
+  return item?.jd === result.jd && item.source === source;
+}
+
+function resumeStyle(text) {
+  const sections = resumeSections(text);
+  const experience = [...sections.experience, ...sections.projects].filter(line => line.trim());
+  const lines = experience.length ? experience : text.split(/\r?\n/).filter(line => line.trim());
+  const lengths = lines.map(line => Array.from(line.trim()).length).sort((a, b) => a - b);
+  const median = lengths[Math.floor(lengths.length / 2)] ?? 0;
+  const bullets = lines.filter(line => /^\s*(?:[-•●▪·]\s*|\d+[.)、]\s*)/u.test(line)).length;
+  const form = bullets ? '条目式' : median > 85 ? '长段落式' : '短段落式';
+  return lines.length ? form + ' · 常见段落约 ' + median + ' 字 · 沿用章节顺序' : '导入简历后读取表达风格';
+}
+
+function renderResumeStyle(details = []) {
+  const label = $('#resume-style');
+  if (label) label.textContent = ['简历风格', resumeStyle(state.profile.resumeText), ...details].join(' · ');
+}
+
+const WORD_TYPE = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+const WORD_PART = 'word/document.xml';
+const ZIP_SCRIPT = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+const WORD_PREVIEW_SCRIPT = 'https://cdn.jsdelivr.net/npm/docx-preview@0.3.7/dist/docx-preview.min.js';
+
+function wordTextKey(text) {
+  return text.normalize('NFKC').replace(/\s+/gu, ' ').trim();
+}
+
+async function readWordPackage(file) {
+  const JSZip = await loadParser(ZIP_SCRIPT, 'JSZip');
+  const zip = await JSZip.loadAsync(await file.arrayBuffer());
+  const part = zip.file(WORD_PART);
+  if (!part) throw new Error('缺少 Word 正文');
+  const xml = new DOMParser().parseFromString(await part.async('string'), 'application/xml');
+  const ns = xml.documentElement.namespaceURI;
+  const body = xml.getElementsByTagNameNS(ns, 'body')[0];
+  if (!body || xml.documentElement.localName !== 'document') throw new Error('无法读取 Word 正文');
+  return { zip, xml, ns, body };
+}
+
+function wordParagraphs(pkg) {
+  const rows = new Map();
+  for (const paragraph of pkg.body.getElementsByTagNameNS(pkg.ns, 'p')) {
+    const nodes = [...paragraph.getElementsByTagNameNS(pkg.ns, 't')];
+    const text = nodes.map(node => node.textContent).join('');
+    const key = wordTextKey(text);
+    if (!key) continue;
+    const allowedParagraph = new Set(['pPr', 'r', 'proofErr', 'bookmarkStart', 'bookmarkEnd']);
+    const allowedRun = new Set(['rPr', 't']);
+    const simple = [...paragraph.children].every(node => node.namespaceURI === pkg.ns &&
+      allowedParagraph.has(node.localName) && (node.localName !== 'r' ||
+        [...node.children].every(child => child.namespaceURI === pkg.ns && allowedRun.has(child.localName))));
+    let inBody = true;
+    for (let parent = paragraph.parentElement; parent && parent !== pkg.body; parent = parent.parentElement) {
+      if (!['tbl', 'tr', 'tc'].includes(parent.localName) || parent.namespaceURI !== pkg.ns) inBody = false;
+    }
+    const group = rows.get(key) ?? [];
+    group.push({ text, nodes, simple: simple && inBody });
+    rows.set(key, group);
+  }
+  return rows;
+}
+
+function replaceWordText(row, replacement, ns) {
+  if (!row?.simple || !replacement.trim() || /[\u0000-\u001f\u007f]/u.test(replacement)) return false;
+  const before = Array.from(row.text);
+  const after = Array.from(replacement);
+  let start = 0;
+  while (start < Math.min(before.length, after.length) && before[start] === after[start]) start++;
+  let suffix = 0;
+  while (suffix < Math.min(before.length, after.length) - start &&
+    before[before.length - 1 - suffix] === after[after.length - 1 - suffix]) suffix++;
+  if (start === before.length && start === after.length) return true;
+  const end = before.length - suffix;
+  let offset = 0;
+  const pieces = row.nodes.map(node => {
+    const chars = Array.from(node.textContent);
+    const piece = { node, chars, start: offset, end: offset + chars.length };
+    offset = piece.end;
+    return piece;
+  }).filter(piece => piece.chars.length);
+  const affected = start === end ? [pieces.find(piece => piece.start < start && piece.end >= start) ?? pieces[0]] :
+    pieces.filter(piece => piece.end > start && piece.start < end);
+  if (!affected[0]) return false;
+  const serializer = new XMLSerializer();
+  const formatting = ({ node }) => {
+    const style = [...node.parentElement.children].find(child => child.namespaceURI === ns && child.localName === 'rPr');
+    return style ? serializer.serializeToString(style) : '';
+  };
+  if (affected.some(piece => formatting(piece) !== formatting(affected[0]))) {
+    const match = replacement.match(/^\s*([^：:]{1,36}[：:])(.*)$/u);
+    const bold = node => node.parentElement.getElementsByTagNameNS(ns, 'b').length > 0 &&
+      ![...node.parentElement.getElementsByTagNameNS(ns, 'b')].some(item => item.getAttributeNS(ns, 'val') === '0');
+    const labelNode = row.nodes.find(bold);
+    const bodyNode = row.nodes.find(node => node !== labelNode && !bold(node));
+    if (!match || !labelNode || !bodyNode) return false;
+    row.nodes.forEach(node => { node.textContent = ''; });
+    labelNode.textContent = match[1];
+    bodyNode.textContent = match[2];
+    if (/^\s|\s$/u.test(bodyNode.textContent)) {
+      bodyNode.setAttributeNS('http://www.w3.org/XML/1998/namespace', 'xml:space', 'preserve');
+    }
+    return true;
+  }
+  const inserted = after.slice(start, after.length - suffix).join('');
+  for (const [index, piece] of affected.entries()) {
+    const prefix = piece.chars.slice(0, Math.max(0, start - piece.start)).join('');
+    const tail = piece.chars.slice(Math.max(0, end - piece.start)).join('');
+    piece.node.textContent = prefix + (index === 0 ? inserted : '') + tail;
+    if (/^\s|\s$/u.test(piece.node.textContent)) {
+      piece.node.setAttributeNS('http://www.w3.org/XML/1998/namespace', 'xml:space', 'preserve');
+    }
+  }
+  return true;
+}
+
+async function revisedWord(file, original, draft) {
+  const pkg = await readWordPackage(file);
+  const rows = wordParagraphs(pkg);
+  const sourceCounts = new Map();
+  for (const text of original.slice(1)) {
+    const key = wordTextKey(text);
+    sourceCounts.set(key, (sourceCounts.get(key) ?? 0) + 1);
+  }
+  const applied = new Set();
+  const skipped = [];
+  for (const [index, replacement] of draft.edits.entries()) {
+    if (draft.decisions[index] !== 'accept' || replacement === original[index]) continue;
+    const key = wordTextKey(original[index] ?? '');
+    const group = rows.get(key);
+    if (index && sourceCounts.get(key) === 1 && group?.length === 1 &&
+      replaceWordText(group[0], replacement, pkg.ns)) applied.add(index);
+    else skipped.push(index);
+  }
+  if (!applied.size) return { blob: file, applied, skipped };
+  pkg.zip.file(WORD_PART, new XMLSerializer().serializeToString(pkg.xml), { createFolders: false });
+  const blob = await pkg.zip.generateAsync({ type: 'blob', mimeType: WORD_TYPE, compression: 'DEFLATE' });
+  return { blob, applied, skipped };
+}
+
+function wordLayout(pkg) {
+  const details = [];
+  if (Object.keys(pkg.zip.files).some(path => /^word\/media\/[^/]+$/u.test(path))) details.push('含嵌入图片');
+  if ([...pkg.xml.getElementsByTagNameNS('*', 'anchor')].length) details.push('含浮动图片（网页预览可能与 Word 有差异）');
+  if ([...pkg.xml.getElementsByTagNameNS(pkg.ns, 'cols')].some(node => Number(node.getAttributeNS(pkg.ns, 'num')) > 1)) details.push('含分栏');
+  const styles = [...pkg.xml.getElementsByTagNameNS(pkg.ns, 'pStyle')]
+    .map(node => node.getAttributeNS(pkg.ns, 'val') ?? '');
+  if (pkg.xml.getElementsByTagNameNS(pkg.ns, 'numPr').length ||
+    styles.some(style => /list|bullet|number|列表/iu.test(style))) details.push('含 Word 列表');
+  if (styles.some(style => /heading|title|标题/iu.test(style))) details.push('含标题样式');
+  return details;
+}
+
+async function wordPreviewData(blob) {
+  const pkg = await readWordPackage(blob);
+  for (const name of Object.keys(pkg.zip.files).filter(path => path.endsWith('.rels'))) {
+    const document = new DOMParser().parseFromString(await pkg.zip.file(name).async('string'), 'application/xml');
+    const external = [...document.getElementsByTagNameNS('*', 'Relationship')]
+      .filter(relation => relation.getAttribute('TargetMode') === 'External');
+    if (external.length) {
+      external.forEach(relation => relation.remove());
+      pkg.zip.file(name, new XMLSerializer().serializeToString(document), { createFolders: false });
+    }
+  }
+  return { data: await pkg.zip.generateAsync({ type: 'arraybuffer' }), details: wordLayout(pkg) };
+}
+
+async function wordPdfPreview(blob) {
+  if (!databaseMode) throw new Error('Word PDF preview requires the local service');
+  const response = await fetch('/api/word-preview', { method: 'POST', headers: { 'Content-Type': WORD_TYPE },
+    body: blob, cache: 'no-store', signal: AbortSignal.timeout(9000) });
+  if (!response.ok) throw new Error('Word PDF preview unavailable');
+  const pdf = await response.blob();
+  if (pdf.type !== 'application/pdf' || pdf.size < 100) throw new Error('Invalid Word PDF preview');
+  return pdf;
+}
+
+function downloadReviewFile(file, name) {
+  const url = URL.createObjectURL(file);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = name;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+async function renderPreparation(result) {
+  const area = $('#preparation-panel');
+  const source = state.profile.resumeText;
+  const task = samePreparation(state.preparation, result) ? state.preparation : null;
+  if (!source.trim()) {
+    area.innerHTML = '<p class="notice">先在档案中导入简历文字，Agent 会用它判断是否值得投，并核对岗位要求。</p>';
+    return;
+  }
+  const packet = task?.packet;
+  area.innerHTML = `<p class="notice"><strong>Agent 投递判断</strong>先回答“值不值得投”。它会列出简历证据和缺口；缺少关键事实时只追问一个会改变判断的问题。确认值得投后，再生成可审阅的定制简历草稿。</p>
+    <form id="prepare-form" class="section-title">
+    <label>任务目标<textarea name="goal" maxlength="1000" rows="2">${escapeHTML(task?.goal ?? DEFAULT_PREP_GOAL)}</textarea></label>
+    <label class="check" id="model-choice" hidden><input type="checkbox" name="model"> 使用模型 Agent（将 JD、必要的简历片段、技能等级和补充回答发送给 OpenAI）</label>
+    <p class="m" id="model-status">本地规则模式可核对证据、追问及生成审阅稿。</p>
+    <button>开始判断并准备投递材料</button></form>
+    <p id="prepare-status" role="status" class="m section-title"></p>
+    ${task?.question ? `<form id="clarify-form" class="card">
+      <h4>待确认 · ${escapeHTML(task.requirement)}</h4><p>${escapeHTML(task.question)}</p>
+      <label>你的补充<textarea name="answer" maxlength="1200" rows="3"></textarea></label>
+      ${task.mode === 'local' ? '<label class="check"><input type="checkbox" name="confirmed"> 我确认这段经历能够证明这项要求</label><br>' : ''}
+      <label class="check"><input type="checkbox" name="include"> 将补充的原话作为待审阅内容加入简历</label>
+      <div class="actions"><button>补充后继续</button><button type="button" id="skip-clarification">暂时无法确认</button></div>
+      ${task.mode === 'model' ? '<p class="m">继续时，补充回答也会用于模型核对。</p>' : ''}
+    </form>` : ''}
+    ${packet ? `<section class="card"><h3>${VERDICTS[packet.verdict] ?? '有条件投递'}</h3>
+      <p class="m">${task.mode === 'model' ? '模型 Agent' : '本地规则'} · ${escapeHTML(packet.summary)}</p>
+      <strong>对应的简历原文</strong>
+      <ul class="agent-evidence">${(Array.isArray(packet.evidence) ? packet.evidence : []).map(item =>
+        `<li><b>${escapeHTML(item.requirement)}</b> · ${escapeHTML(source.split(/\r?\n/)[item.line - 1])}</li>`).join('') || '<li>暂无可引用的原文</li>'}</ul>
+      <strong>待确认或缺失</strong><p class="m">${escapeHTML(Array.isArray(packet.gaps) && packet.gaps.length ? packet.gaps.join('、') : '暂无')}</p>
+      ${task.answer ? `<p class="m">${packet.confirmed ? '你确认的依据 · ' + escapeHTML(packet.confirmed) : '你补充的原话'} · ${escapeHTML(task.answer)}</p>` : ''}
+      ${packet.verdict === 'hold' ? '<p class="m">先核对缺口，再准备定制稿。</p>' : '<button type="button" id="review-packet">进入红绿审阅</button>'}
+    </section>` : ''}`;
+  const form = $('#prepare-form');
+  form.onsubmit = event => {
+    event.preventDefault();
+    const data = new FormData(form);
+    runPreparation(area, result, { jd: result.jd, source, goal: data.get('goal').trim() || DEFAULT_PREP_GOAL,
+      mode: data.has('model') ? 'model' : 'local' });
+  };
+  const clarify = $('#clarify-form');
+  if (clarify) {
+    clarify.onsubmit = event => {
+      event.preventDefault();
+      const data = new FormData(clarify);
+      const answer = data.get('answer').trim();
+      if (answer) runPreparation(area, result, { ...task, answer, include: data.has('include'), confirmed: data.has('confirmed') });
+      else clarify.elements.answer.focus();
+    };
+    $('#skip-clarification').onclick = () => runPreparation(area, result, { ...task, skip: true });
+  }
+  const review = $('#review-packet');
+  if (review) review.onclick = () => $('#show-rewrite').click();
+  if (databaseMode && !demo) {
+    try {
+      const response = await fetch('/api/agent', { cache: 'no-store' });
+      const config = response.ok && await response.json();
+      if (!area.isConnected || !area.contains(form)) return;
+      area.querySelector('#model-choice').hidden = !config?.configured;
+      area.querySelector('#model-status').textContent = config?.configured ? '默认在本机运行。可勾选模型 Agent。' :
+        '当前使用本地规则。配置 OPENAI_API_KEY 并重启服务后可启用模型 Agent。';
+    } catch {}
+  }
+}
+
+async function runPreparation(area, result, task) {
+  const workspace = state;
+  const status = area.querySelector('#prepare-status');
+  const buttons = [...area.querySelectorAll('button')];
+  buttons.forEach(button => { button.disabled = true; });
+  status.textContent = '正在核对 JD 和档案证据…';
+  try {
+    let outcome;
+    if (task.mode === 'model') {
+      const lines = task.source.split(/\r?\n/).map(line => /@|(?:手机号|联系电话|住址|手机|电话)\s*[:：]/u.test(line) ? '' : line);
+      const response = await fetch('/api/agent', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jd: task.jd, goal: task.goal, answer: task.answer ?? '', requirement: task.requirement ?? '',
+          question: task.question ?? '', skip: Boolean(task.skip),
+          lines, levels: Object.fromEntries(resumeLevels(workspace.profile)), allowModel: true }),
+        signal: AbortSignal.timeout(80000) });
+      if (!response.ok) throw new Error('model');
+      outcome = await response.json();
+    } else {
+      outcome = localPreparation(result, workspace.profile, task);
+    }
+    if (state !== workspace || !area.isConnected || !samePreparation(task, result)) return;
+    const { question, requirement, packet, ...base } = task;
+    state.preparation = outcome.question ? { ...base, question: outcome.question, requirement: outcome.requirement } :
+      { ...base, askedRequirement: task.requirement, packet: outcome };
+    if (!outcome.question && outcome.verdict !== 'hold') {
+      state.rewrite = reviewDraft(result, task.source, outcome.evidence, task.include ? task.answer : '');
+    }
+    save();
+    renderPreparation(result);
+  } catch {
+    if (area.isConnected) status.textContent = '暂时未能生成准备包。可重试，或使用本地规则模式。';
+  } finally {
+    buttons.forEach(button => { button.disabled = false; });
+  }
+}
+
+function renderRewrite(result) {
+  const area = $('#rewrite-editor');
+  const source = state.profile.resumeText;
+  if (!source.trim()) {
+    area.innerHTML = '<p class="notice">请先导入简历或粘贴原文。</p>';
+    return;
+  }
+  const original = ['', ...source.split(/\r?\n/)];
+  if (!samePreparation(state.rewrite, result, source) || state.rewrite.version !== REVIEW_DRAFT_VERSION ||
+      state.rewrite.edits.length !== original.length) {
+    state.rewrite = reviewDraft(result, source, evidenceForJD(result, state.profile));
+    save();
+  }
+  const draft = state.rewrite;
+  draft.decisions ??= {};
+  draft.references ??= {};
+  const changes = original.flatMap((text, index) => text !== draft.edits[index] ? [index] : []);
+  const cited = new Set(draft.origins ?? []);
+  const pending = index => !draft.decisions[index];
+  area.innerHTML = `
+    <header class="review-header">
+      <div class="review-meta"><button type="button" id="exit-review">← 返回 Offer Compass</button><strong>简历修改助手</strong>
+        <small id="review-file-name">当前简历</small>
+        ${result.job?.role ? `<small class="review-role">目标岗位 · ${escapeHTML(result.job.role)}</small>` : ''}
+        <span class="review-context"><i></i>当前档案内审阅</span></div>
+      <div class="actions">
+        <div class="review-progress"><span id="review-progress-label"></span><progress id="review-progress" aria-label="审阅进度"></progress></div>
+        <button type="button" id="accept-all">接受全部待审</button>
+        <button type="button" class="review-primary" id="print-resume" title="生成已采纳修改后的完整简历 PDF">导出</button>
+        <span id="export-message" class="export-message" role="status" hidden></span>
+      </div>
+    </header>
+    <div class="review-grid">
+      <div class="review-paper-column">
+        <div id="source-gate" class="source-gate${demo ? ' ready' : ''}">
+          <strong>${demo ? '演示简历预览' : '正在查找原始简历文件…'}</strong>
+          <span>${demo ? '当前使用演示档案。' : '只有原 PDF / Word 原件才能保留头像、线条、字体和原始排版。'}</span>
+          <label${demo ? ' hidden' : ''}>重新关联原 PDF 或 Word<input aria-label="关联原件" type="file" accept=".pdf,.docx" id="review-pdf"></label>
+          <p id="document-mode" class="document-mode"><b>纯文本草稿模式</b> · 仅生成内容草稿，不承诺保留原始版式。</p>
+        </div>
+        <div id="review-viewer" class="page-scroll" aria-label="简历预览"><div id="original-preview"></div></div>
+        <div id="review-dock"></div>
+        <section id="review-change" class="inline-review" aria-label="逐条审阅" hidden></section>
+      </div>
+      <aside class="review-side" aria-label="修改建议">
+        <div class="hd"><h3>修改建议</h3><small id="review-total"></small></div>
+        <div id="review-counts" class="section-title"></div>
+        <div id="review-list" class="review-list"></div>
+        <p id="review-status" class="m review-status" role="status"></p>
+        <details class="review-source"><summary>原件与导出选项</summary>
+          <p class="m section-title" id="review-style">${escapeHTML(resumeStyle(source))}</p>
+          <p class="m" id="pdf-source-status" role="status"></p>
+          <div class="actions"><button type="button" id="download-word" hidden>导出修订 Word</button>
+            <button type="button" id="download-changes">导出修订清单</button>
+            <button type="button" id="save-reviewed-intent">存为意向</button></div>
+        </details>
+      </aside>
+    </div>
+    `;
+  const viewer = area.querySelector('#review-viewer');
+  const header = area.querySelector('.review-header');
+  const preview = area.querySelector('#original-preview');
+  const dock = area.querySelector('#review-dock');
+  const panel = area.querySelector('#review-change');
+  const list = area.querySelector('#review-list');
+  const note = area.querySelector('#review-status');
+  const sourceStatus = area.querySelector('#pdf-source-status');
+  const sourceGate = area.querySelector('#source-gate');
+  const modeStatus = area.querySelector('#document-mode');
+  const wordButton = area.querySelector('#download-word');
+  const print = area.querySelector('#print-resume');
+  const checklist = area.querySelector('#download-changes');
+  const intent = area.querySelector('#save-reviewed-intent');
+  const exportMessage = area.querySelector('#export-message');
+  const anchors = new Map();
+  const live = () => viewer.isConnected && area.contains(viewer);
+  let originalFile = null;
+  let kind = 'text';
+  let documentMode = 'text_draft';
+  let wordOutput = null;
+  let sequence = 0;
+  let resizeWord;
+  let exportReady = demo;
+  let selected = changes.find(pending) ?? changes[0];
+
+  function renderDocumentMode(risk = false, message = '') {
+    const labels = {
+      docx_precise: ['Word 精准修改模式', '继承原段落字体、字号、粗体、缩进、项目符号和图片；正式导出优先使用修订 Word。'],
+      pdf_limited: ['PDF 限制修改模式', '只允许长度接近且不改变行数的小幅修改；高风险修改必须改用 Word 原件。'],
+      text_draft: ['纯文本草稿模式', '仅生成内容草稿，不承诺保留原始视觉格式。']
+    };
+    const [label, description] = labels[documentMode];
+    modeStatus.classList.toggle('risk', risk);
+    modeStatus.innerHTML = `<b>${escapeHTML(label)}</b> · ${escapeHTML(message || description)}`;
+  }
+
+  function difference(index, replacement = draft.edits[index]) {
+    const before = Array.from(original[index] ?? '');
+    const after = Array.from(replacement ?? '');
+    let start = 0;
+    while (start < before.length && start < after.length && before[start] === after[start]) start++;
+    let end = 0;
+    while (end < before.length - start && end < after.length - start &&
+      before[before.length - end - 1] === after[after.length - end - 1]) end++;
+    return { prefix: before.slice(0, start).join(''), removed: before.slice(start, before.length - end).join(''),
+      added: after.slice(start, after.length - end).join(''), suffix: end ? before.slice(-end).join('') : '' };
+  }
+
+  const reviewedLines = () => draft.edits.map((text, index) => draft.decisions[index] === 'accept' ? text : original[index]);
+  const countPending = () => changes.filter(pending).length;
+
+  function updateControls() {
+    const remaining = countPending();
+    area.querySelector('#review-total').textContent = '共 ' + changes.length + ' 处';
+    area.querySelector('#review-counts').innerHTML = `<span class="tag review-plus">已采纳 ${changes.filter(index => draft.decisions[index] === 'accept').length}</span>
+      <span class="tag review-minus">待改写 ${remaining}</span>`;
+    area.querySelector('#review-progress-label').textContent = '已决定 ' + (changes.length - remaining) + ' / ' + changes.length;
+    const progress = area.querySelector('#review-progress');
+    progress.max = changes.length || 1;
+    progress.value = changes.length - remaining;
+    area.querySelector('#accept-all').disabled = !remaining;
+    const ordered = [...changes].sort((a, b) => Number(!pending(a)) - Number(!pending(b)));
+    list.replaceChildren(...ordered.map(index => {
+      const item = document.createElement('button');
+      const decision = draft.decisions[index];
+      const excerpt = (draft.edits[index] || original[index]).trim();
+      item.type = 'button';
+      item.className = 'review-item';
+      item.dataset.index = String(index);
+      item.dataset.decision = decision ?? 'pending';
+      item.setAttribute('aria-current', String(index === selected));
+      item.innerHTML = `<small>${changes.indexOf(index) + 1} · ${decision === 'accept' ? '已采纳' : decision === 'reject' ? '已保留原文' : '待审阅'}</small>
+        <strong>${escapeHTML(excerpt.slice(0, 44) + (excerpt.length > 44 ? '…' : ''))}</strong>
+        ${draft.references[index] ? `<small>${escapeHTML(draft.references[index])}</small>` : ''}`;
+      item.onclick = () => openNote(index);
+      return item;
+    }));
+    note.textContent = !changes.length ? '当前没有可安全改写的段落。' : remaining ? remaining + ' 处待审阅' : '全部审阅完成';
+    print.disabled = remaining > 0 || !exportReady;
+    intent.disabled = checklist.disabled = remaining > 0;
+    wordButton.hidden = kind !== 'docx';
+    wordButton.disabled = remaining > 0 || !wordOutput?.applied.size;
+  }
+
+  function hideNote() {
+    panel.hidden = true;
+    dock.after(panel);
+  }
+
+  function bindAnchor(element, index) {
+    if (!anchors.has(index)) anchors.set(index, element);
+    element.onclick = () => openNote(index, element);
+    if (element.tagName !== 'BUTTON') {
+      element.tabIndex = 0;
+      element.setAttribute('role', 'button');
+      element.setAttribute('aria-label', '打开此处简历修订');
+      element.onkeydown = event => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          openNote(index, element);
+        }
+      };
+    }
+  }
+
+  function openNote(index, anchor = anchors.get(index)) {
+    if (!changes.includes(index)) return;
+    selected = index;
+    updateControls();
+    const referenced = index ? original[index] : [...cited].map(line => original[line]).filter(Boolean).join('\n');
+    const restoreFocus = () => (anchor?.isConnected ? anchor : list.querySelector('[aria-current="true"]'))?.focus({ preventScroll: true });
+    panel.innerHTML = `<div class="hd"><strong>审阅修改</strong><button type="button" data-close>关闭</button></div>
+      <div class="review-redline"><small>修改前</small><del>${escapeHTML(original[index] || '（新增内容）')}</del><small>修改后</small><ins>${escapeHTML(draft.edits[index])}</ins></div>
+      <details data-edit><summary>编辑建议</summary><label>建议文字<textarea rows="4" id="review-wording">${escapeHTML(draft.edits[index])}</textarea></label></details>
+      ${!index && referenced ? `<p class="m">引用的原文 · ${escapeHTML(referenced)}</p>` : ''}
+      <p class="m section-title">依据 · ${escapeHTML(draft.references[index] || '对应的简历原文')}</p>
+      <p class="m" data-length-warning role="status"></p>
+      <div class="actions"><button type="button" class="review-primary" id="accept-change">✓ 接受修改</button>
+        <button type="button" id="reject-change">× 保留原文</button>
+        ${pending(index) ? '' : '<button type="button" id="undo-review">重新审阅</button>'}</div>`;
+    const wording = panel.querySelector('#review-wording');
+    const showLengthWarning = () => {
+      const assessment = layoutAssessment(original[index], wording.value, documentMode);
+      const warning = panel.querySelector('[data-length-warning]');
+      warning.textContent = kind === 'docx' && !index
+        ? '新增段落会进入修订清单。Word 原版导出仅写回已有段落。'
+        : assessment.layoutRisk
+          ? assessment.reasons.join('；') + '。当前修改会影响原版式，请上传 Word 原文件后再正式采纳。'
+          : `长度 ${assessment.lengthBefore} → ${assessment.lengthAfter}，当前未发现明显版式风险。`;
+      warning.dataset.risk = String(assessment.layoutRisk);
+      panel.querySelector('#accept-change').disabled = assessment.layoutRisk;
+      renderDocumentMode(assessment.layoutRisk, assessment.layoutRisk ? warning.textContent : '当前修改满足本模式的版式边界。');
+    };
+    wording.oninput = () => {
+      const line = panel.querySelector('.review-redline');
+      line.innerHTML = '<small>修改前</small><del>' + escapeHTML(original[index] || '（新增内容）') +
+        '</del><small>修改后</small><ins>' + escapeHTML(wording.value) + '</ins>';
+      showLengthWarning();
+    };
+    showLengthWarning();
+    panel.querySelector('[data-close]').onclick = () => {
+      hideNote();
+      restoreFocus();
+    };
+    const decide = decision => {
+      const assessment = layoutAssessment(original[index], wording.value, documentMode);
+      if (decision === 'accept' && assessment.layoutRisk) {
+        panel.querySelector('[data-length-warning]').textContent = assessment.reasons.join('；') + '。请上传 Word 原文件后再采纳。';
+        return;
+      }
+      if (decision === 'accept') draft.edits[index] = wording.value;
+      if (decision) draft.decisions[index] = decision;
+      else delete draft.decisions[index];
+      hideNote();
+      updateControls();
+      save();
+      if (kind === 'docx') drawWord(originalFile);
+      else if (kind === 'pdf') updatePdfMarks();
+      else drawText();
+      list.querySelector('[aria-current="true"]')?.focus({ preventScroll: true });
+    };
+    panel.querySelector('#accept-change').onclick = () => decide('accept');
+    panel.querySelector('#reject-change').onclick = () => decide('reject');
+    const undo = panel.querySelector('#undo-review');
+    if (undo) undo.onclick = () => decide(null);
+    if (anchor?.isConnected) {
+      anchor.scrollIntoView({ block: 'center' });
+      const top = anchor.getBoundingClientRect().bottom - viewer.getBoundingClientRect().top + 6;
+      panel.style.top = Math.max(0, top) + 'px';
+      viewer.append(panel);
+    } else {
+      panel.style.removeProperty('top');
+      dock.append(panel);
+    }
+    panel.hidden = false;
+    panel.scrollIntoView({ block: 'nearest' });
+    panel.querySelector('#accept-change').focus({ preventScroll: true });
+  }
+
+  function drawText() {
+    anchors.clear();
+    const unresolved = new Set(changes.filter(index => index && pending(index)));
+    const pages = paginateResume(reviewedLines(), unresolved, original);
+    for (const page of pages) {
+      for (const block of page) {
+        if (unresolved.has(block.index)) block.mark = 'removed';
+        else if (draft.decisions[block.index]) block.mark = draft.decisions[block.index];
+      }
+    }
+    showPaper(preview, pages);
+    preview.querySelectorAll('[data-change]').forEach(element => bindAnchor(element, Number(element.dataset.change)));
+  }
+
+  function updatePdfMarks(alreadyRevised = false) {
+    anchors.clear();
+    preview.querySelectorAll('.pdf-replacement').forEach(element => element.remove());
+    const accepted = new Map();
+    for (const element of preview.querySelectorAll('.paper-hit')) {
+      const line = Number(element.dataset.sourceLine);
+      const index = changes.includes(line) ? line : changes.includes(0) && cited.has(line) ? 0 : null;
+      element.hidden = index === null;
+      if (index !== null) {
+        const decision = draft.decisions[index] ?? 'pending';
+        element.dataset.decision = decision;
+        if (decision === 'accept') {
+          element.hidden = true;
+          if (!alreadyRevised) {
+            const group = accepted.get(index) ?? [];
+            group.push(element);
+            accepted.set(index, group);
+          }
+        } else if (decision === 'reject') element.hidden = true;
+        else bindAnchor(element, index);
+      }
+    }
+    for (const [index, hits] of accepted) {
+      const page = hits[0]?.closest('.pdf-page');
+      if (!page) continue;
+      const left = Math.min(...hits.map(hit => parseFloat(hit.style.left)));
+      const top = Math.min(...hits.map(hit => parseFloat(hit.style.top)));
+      const right = Math.max(...hits.map(hit => parseFloat(hit.style.left) + parseFloat(hit.style.width)));
+      const bottom = Math.max(...hits.map(hit => parseFloat(hit.style.top) + parseFloat(hit.style.height)));
+      const replacement = document.createElement('button');
+      replacement.type = 'button';
+      replacement.className = 'pdf-replacement';
+      replacement.dataset.change = String(index);
+      const text = draft.edits[index];
+      const match = text.match(/^\s*(?:[-•●▪·⚫]\s*)?([^：:]{1,28}[：:])(.*)$/u);
+      if (match) {
+        const bullet = document.createElement('span');
+        bullet.className = 'pdf-bullet';
+        bullet.setAttribute('aria-hidden', 'true');
+        const label = document.createElement('strong');
+        label.textContent = match[1];
+        const body = document.createElement('span');
+        body.textContent = match[2];
+        replacement.append(bullet, label, body);
+      } else replacement.textContent = text.replace(/^\s*[-•●▪·⚫]\s*/u, '');
+      replacement.setAttribute('aria-label', '已采纳修改：' + draft.edits[index]);
+      Object.assign(replacement.style, { left: left + '%', top: top + '%',
+        width: Math.max(8, right - left) + '%', minHeight: Math.max(1.5, bottom - top) + '%' });
+      page.append(replacement);
+      bindAnchor(replacement, index);
+    }
+  }
+
+  async function drawWord(file) {
+    const request = ++sequence;
+    wordOutput = null;
+    updateControls();
+    sourceStatus.textContent = '正在读取 Word 版面…';
+    try {
+      const output = await revisedWord(file, original, draft);
+      if (request !== sequence || !live()) return;
+      wordOutput = output;
+      const { data, details } = await wordPreviewData(output.blob);
+      try {
+        sourceStatus.textContent = '正在用 Word 生成高保真预览…';
+        const pdf = await wordPdfPreview(output.blob);
+        if (request !== sequence || !live()) return;
+        const pages = document.createElement('div');
+        await showOriginalPdf(pages, pdf, original, changes.map(index => ({ index })), draft.references,
+          draft.origins, () => request === sequence && live());
+        if (request !== sequence || !live()) return;
+        preview.replaceChildren(...pages.childNodes);
+        resizeWord = null;
+        updatePdfMarks(true);
+        area.querySelector('#review-style').textContent = [resumeStyle(source), ...details].join(' · ');
+        sourceStatus.textContent = '高保真预览由本机 Word 生成；头像、文字环绕、换行和分页与 Word 保持一致。' +
+          (output.skipped.length ? ' 有 ' + output.skipped.length + ' 条采纳内容仅进入修订清单。' : '');
+        exportReady = true;
+        print.textContent = '导出';
+        print.title = '导出修改后的 Word 原文件格式';
+        updateControls();
+        return;
+      } catch {
+        if (request !== sequence || !live()) return;
+        sourceStatus.textContent = '本机 Word 高保真转换暂不可用，正在生成网页近似预览…';
+      }
+      const renderer = await loadParser(WORD_PREVIEW_SCRIPT, 'docx');
+      if (request !== sequence || !live()) return;
+      const host = document.createElement('div');
+      host.className = 'word-preview';
+      const root = host.attachShadow({ mode: 'open' });
+      const page = document.createElement('div');
+      const styles = document.createElement('div');
+      root.append(styles, page);
+      await renderer.renderAsync(data, page, styles, {
+        className: 'resume-docx', renderAltChunks: false, renderComments: false,
+        ignoreLastRenderedPageBreak: false, useBase64URL: true
+      });
+      if (request !== sequence || !live()) return;
+      const css = document.createElement('style');
+      css.textContent = '.resume-docx-wrapper{padding:0!important;background:transparent!important;overflow:visible!important}.resume-docx-wrapper>section{margin:0 auto 10px!important;overflow:visible!important}.oc-floating-anchor{top:0!important;right:10mm!important;left:auto!important;z-index:2!important}.oc-word-change{outline:2px solid #b8324f;outline-offset:2px;background:#ffdce3!important;cursor:pointer}.oc-word-change:focus-visible{outline:3px solid #6150d5}';
+      root.append(css);
+      if (details.some(detail => detail.includes('浮动图片'))) {
+        for (const image of page.querySelectorAll('img')) {
+          let anchor = image.parentElement;
+          while (anchor && anchor !== page && getComputedStyle(anchor).position !== 'absolute') anchor = anchor.parentElement;
+          if (anchor && anchor !== page) anchor.classList.add('oc-floating-anchor');
+        }
+      }
+      anchors.clear();
+      const rendered = new Map();
+      for (const paragraph of page.querySelectorAll('article p')) {
+        const key = wordTextKey(paragraph.textContent);
+        const same = rendered.get(key) ?? [];
+        same.push(paragraph);
+        rendered.set(key, same);
+      }
+      for (const index of changes.filter(value => value && pending(value))) {
+        const paragraphs = rendered.get(wordTextKey(original[index]));
+        if (paragraphs?.length === 1) {
+          paragraphs[0].classList.add('oc-word-change');
+          bindAnchor(paragraphs[0], index);
+        }
+      }
+      const oldScroll = viewer.scrollTop;
+      preview.replaceChildren(host);
+      resizeWord = () => {
+        const width = page.querySelector('section.resume-docx')?.offsetWidth;
+        if (width) host.style.zoom = Math.min(1, (viewer.clientWidth - 18) / width);
+      };
+      resizeWord();
+      viewer.scrollTop = oldScroll;
+      area.querySelector('#review-style').textContent = [resumeStyle(source), ...details].join(' · ');
+      sourceStatus.textContent = '当前为网页近似预览：头像已固定在页眉右上；浮动图片、文字环绕、最终换行和分页以下载后的 Word 为准。' +
+        (output.skipped.length ? ' 有 ' + output.skipped.length + ' 条采纳内容仅进入修订清单。' : '');
+    } catch {
+      if (request !== sequence || !live()) return;
+      if (!wordOutput) {
+        kind = 'text';
+        documentMode = 'text_draft';
+        renderDocumentMode(true, 'Word 版面无法可靠读取，只能生成重排版内容草稿。');
+      }
+      sourceStatus.textContent = 'Word 版面暂时无法显示。可按文字审阅，原版导出以文件中可定位的段落为准。' +
+        (wordOutput?.skipped.length ? ' 有 ' + wordOutput.skipped.length + ' 条采纳内容仅进入修订清单。' : '');
+      drawText();
+    }
+    exportReady = true;
+    print.textContent = '导出';
+    print.title = '导出修改后的 Word 原文件格式';
+    updateControls();
+  }
+
+  async function present(file) {
+    hideNote();
+    originalFile = file;
+    area.querySelector('#review-file-name').textContent = file.name;
+    const extension = file.name.split('.').pop().toLowerCase();
+    sourceGate.classList.add('ready');
+    sourceGate.querySelector('strong').textContent = extension === 'pdf' ? '原 PDF 完整预览已关联' : '原 Word 版式预览已关联';
+    sourceGate.querySelector('span').textContent = extension === 'pdf'
+      ? '照片、线条和版式来自原文件；彩色标记只是审阅覆盖层。'
+      : '图片和版式来自原文件；彩色标记只是审阅覆盖层。';
+    if (extension === 'docx') {
+      kind = 'docx';
+      documentMode = 'docx_precise';
+      renderDocumentMode();
+      await drawWord(file);
+      return;
+    }
+    kind = 'pdf';
+    documentMode = 'pdf_limited';
+    renderDocumentMode();
+    const request = ++sequence;
+    exportReady = false;
+    print.disabled = true;
+    print.textContent = '准备导出…';
+    print.title = '正在渲染原 PDF 页面';
+    sourceStatus.textContent = '正在渲染原 PDF…';
+    try {
+      const pages = document.createElement('div');
+      await showOriginalPdf(pages, file, original, changes.map(index => ({ index })), draft.references,
+        draft.origins, () => request === sequence && live());
+      if (request !== sequence || !live()) return;
+      preview.replaceChildren(...pages.childNodes);
+      updatePdfMarks();
+      exportReady = true;
+      print.textContent = '导出';
+      print.title = '生成修改后的完整 PDF';
+      sourceStatus.textContent = '原 PDF 页面 · 导出将保留照片、线条和原始版式，并叠加已采纳文字。';
+    } catch {
+      if (request !== sequence || !live()) return;
+      kind = 'text';
+      documentMode = 'text_draft';
+      renderDocumentMode(true, '原 PDF 无法可靠定位或渲染，只能生成重排版内容草稿。');
+      exportReady = true;
+      print.textContent = '导出';
+      print.title = '原 PDF 未成功渲染；此导出不保留原始图片和版式';
+      sourceStatus.textContent = '原 PDF 暂时无法显示。可重新关联或按提取文字审阅。';
+      drawText();
+    }
+    updateControls();
+  }
+
+  function exitReview() {
+    hideNote();
+    switchRewrite('suggestions');
+    $('#show-rewrite')?.focus();
+  }
+  area.querySelector('#exit-review').onclick = exitReview;
+  area.onkeydown = event => {
+    if (event.key !== 'Escape') return;
+    if (!panel.hidden) panel.querySelector('[data-close]').click();
+    else exitReview();
+  };
+  area.querySelector('#accept-all').onclick = () => {
+    if (!countPending()) return;
+    for (const index of changes.filter(pending)) draft.decisions[index] = 'accept';
+    hideNote();
+    updateControls();
+    save();
+    if (kind === 'docx') drawWord(originalFile);
+    else if (kind === 'pdf') updatePdfMarks();
+    else drawText();
+  };
+  wordButton.onclick = () => {
+    if (!countPending() && wordOutput?.applied.size) {
+      downloadReviewFile(wordOutput.blob, originalFile.name.replace(/\.docx$/iu, '') + '-岗位修订.docx');
+    }
+  };
+  checklist.onclick = () => {
+    if (countPending()) return;
+    const accepted = changes.filter(index => draft.decisions[index] === 'accept');
+    const content = ['简历修订清单', result.job?.role || '', ...accepted.flatMap(index => [
+      '', index ? '原文第 ' + index + ' 项' : '新增段落',
+      '原文：' + (original[index] || '无'), '采纳：' + draft.edits[index],
+      '依据：' + (draft.references[index] || '对应的简历原文')
+    ]), ...(accepted.length ? [] : ['没有采纳的修改。'])].join('\n');
+    downloadReviewFile(new Blob(['\ufeff', content], { type: 'text/plain;charset=utf-8' }), '简历修订清单.txt');
+  };
+  print.onclick = async () => {
+    if (countPending()) return;
+    const acceptedChanges = changes.filter(index => draft.decisions[index] === 'accept');
+    if (!acceptedChanges.length) {
+      sourceStatus.textContent = '当前文档没有任何改动，无需生成新的 PDF。';
+      exportMessage.textContent = '当前文档未修改';
+      exportMessage.hidden = false;
+      clearTimeout(exportMessage._timer);
+      exportMessage._timer = setTimeout(() => { exportMessage.hidden = true; }, 3200);
+      return;
+    }
+    const risky = acceptedChanges.find(index => layoutAssessment(original[index], draft.edits[index], documentMode).layoutRisk);
+    if (risky !== undefined) {
+      exportMessage.textContent = documentMode === 'pdf_limited' ? '当前修改会影响版式，请上传 Word 原文件' : '当前仅为内容草稿，不能生成正式版';
+      exportMessage.hidden = false;
+      clearTimeout(exportMessage._timer);
+      exportMessage._timer = setTimeout(() => { exportMessage.hidden = true; }, 4200);
+      return;
+    }
+    if (kind === 'docx') {
+      const unapplied = acceptedChanges.filter(index => !wordOutput?.applied.has(index));
+      if (!wordOutput || unapplied.length) {
+        exportMessage.textContent = '部分修改无法安全写回 Word 原段落，已阻止不完整导出';
+        exportMessage.hidden = false;
+        clearTimeout(exportMessage._timer);
+        exportMessage._timer = setTimeout(() => { exportMessage.hidden = true; }, 4200);
+        return;
+      }
+      const name = originalFile.name.replace(/\.docx$/iu, '') + '-岗位修订.docx';
+      downloadReviewFile(wordOutput.blob, name);
+      exportMessage.textContent = '已导出修改后的 Word';
+      exportMessage.hidden = false;
+      clearTimeout(exportMessage._timer);
+      exportMessage._timer = setTimeout(() => { exportMessage.hidden = true; }, 3200);
+      return;
+    }
+    if (kind === 'pdf') {
+      print.disabled = true;
+      print.textContent = '正在生成…';
+      try {
+        await printPdfReview(preview);
+      } catch {
+        sourceStatus.textContent = '原 PDF 页面合成失败，已阻止残缺导出。请重新关联原件后再试。';
+      } finally {
+        print.textContent = '导出';
+        print.disabled = false;
+      }
+    }
+    else printResume(paginateResume(reviewedLines()));
+  };
+  intent.onclick = () => {
+    if (!countPending()) {
+      exitReview();
+      $('#save-intent').click();
+      $('#jd-entry')?.scrollIntoView({ block: 'nearest' });
+    }
+  };
+
+  drawText();
+  renderDocumentMode();
+  updateControls();
+  area.scrollTop = 0;
+  area.querySelector('#exit-review').focus({ preventScroll: true });
+  sourceStatus.textContent = demo ? '演示档案 · 按简历文字显示。' : '尚未关联原件时仅显示文字重排稿，不代表原 PDF 版式。';
+  if (!demo) originalResume(source).then(file => {
+    if (file && live() && !originalFile) present(file);
+    else if (live() && !originalFile) {
+      exportReady = true;
+      documentMode = 'text_draft';
+      renderDocumentMode(true, '未关联原始文件，只能生成重排版内容草稿。');
+      print.textContent = '导出';
+      print.title = '未关联原文件；此导出不保留原始图片和版式';
+      updateControls();
+      sourceGate.querySelector('strong').textContent = '原始文件未关联';
+      sourceGate.querySelector('span').textContent = '当前是文字重排预览，因此不会出现 PDF 中的头像和装饰。请重新关联原 PDF。';
+    }
+  }).catch(() => {});
+  const observer = new ResizeObserver(() => {
+    if (!live()) observer.disconnect();
+    else if (!area.hidden) {
+      area.style.setProperty('--review-header-height', header.offsetHeight + 'px');
+      if (panel.hidden) {
+        if (kind === 'docx') resizeWord?.();
+        if (kind === 'text') drawText();
+      }
+    }
+  });
+  observer.observe(header);
+  observer.observe(area.querySelector('.review-paper-column'));
+  area.querySelector('#review-pdf').onchange = async event => {
+    const file = event.target.files[0];
+    event.target.value = '';
+    if (!file) return;
+    const extension = file.name.split('.').pop().toLowerCase();
+    if (!['pdf', 'docx'].includes(extension) || file.size > 10 * 1024 * 1024) {
+      sourceStatus.textContent = '请选择不超过 10 MB 的原 PDF 或 DOCX。';
+      return;
+    }
+    const request = ++sequence;
+    try {
+      const extracted = (await readResumeFile(file, extension)).trim();
+      if (request !== sequence || !live()) return;
+      if (normalize(extracted) !== normalize(source)) {
+        sourceStatus.textContent = '原件与当前档案文字不一致。若要切换版本，请从档案页导入。';
+        return;
+      }
+      await originalResume(source, file).catch(() => {});
+      if (request === sequence && live()) await present(file);
+    } catch {
+      if (request === sequence && live()) sourceStatus.textContent = '无法读取该原件。';
+    }
+  };
+}
+
+function paperBlock(block, interactive, active) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'paper-block';
+  for (const line of block.text.split(/\r?\n/).filter(text => text.trim())) {
+    const heading = ['岗位相关经历', '补充经历'].includes(line.trim()) || HEADINGS.some(([, pattern]) => {
+      const match = line.normalize('NFKC').trim().match(pattern);
+      return match && !match[1];
+    });
+    const element = document.createElement(heading ? 'h2' : 'p');
+    element.textContent = line;
+    wrapper.append(element);
+  }
+  if (interactive && block.mark) {
+    wrapper.dataset.change = block.index;
+    wrapper.dataset.review = block.mark;
+    wrapper.tabIndex = 0;
+    wrapper.setAttribute('role', 'button');
+    wrapper.setAttribute('aria-current', String(block.index === active));
+  }
+  return wrapper;
+}
+
+function paginateResume(lines, marked = new Set(), original = []) {
+  const blocks = lines.map((text, index) => ({
+    index, text: text || (marked.has(index) ? original[index] : ''),
+    mark: marked.has(index) ? (text.trim() ? 'pending' : 'removed') : ''
+  }));
+  const summary = blocks.shift();
+  const firstSection = blocks.findIndex(block => HEADINGS.some(([, pattern]) => pattern.test(block.text.normalize('NFKC').trim())));
+  if (summary.text.trim()) blocks.splice(Math.max(0, firstSection), 0, summary);
+  const measure = document.createElement('div');
+  measure.className = 'paper paper-measure';
+  document.body.append(measure);
+  const style = getComputedStyle(measure);
+  const limit = measure.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom) - 1;
+  const pages = [[]];
+  let used = 0;
+  for (const block of blocks.filter(item => item.text.trim())) {
+    const node = paperBlock(block, false);
+    measure.replaceChildren(node);
+    const height = node.getBoundingClientRect().height;
+    if (used && used + height > limit) {
+      pages.push([]);
+      used = 0;
+    }
+    pages[pages.length - 1].push(block);
+    used += height;
+  }
+  measure.remove();
+  return pages;
+}
+
+function showPaper(area, pages, active) {
+  const top = area.scrollTop;
+  const width = Math.max(40, area.clientWidth - 16);
+  const scale = width / (210 * 96 / 25.4);
+  area.replaceChildren(...pages.map(blocks => {
+    const shell = document.createElement('div');
+    shell.className = 'paper-shell';
+    shell.style.height = width * 297 / 210 + 'px';
+    const page = document.createElement('div');
+    page.className = 'paper';
+    page.style.transform = 'scale(' + scale + ')';
+    page.append(...blocks.map(block => paperBlock(block, true, active)));
+    shell.append(page);
+    return shell;
+  }));
+  area.scrollTop = top;
+}
+
+async function showOriginalPdf(area, file, original, changes, references, origins = [], active = () => area.isConnected) {
+  const task = await resumePdfTask(await file.arrayBuffer());
+  const indexes = new Map();
+  const sourceLines = [];
+  original.forEach((text, index) => {
+    const key = normalize(text);
+    if (key) {
+      indexes.set(key, [...(indexes.get(key) ?? []), index]);
+      sourceLines.push({ key, index });
+    }
+  });
+  const changed = new Set(changes.map(item => item.index));
+  const cited = new Set(origins.length ? origins : (String(references[0] ?? '').match(/\d+/g) ?? []).map(Number));
+  try {
+    const pdf = await task.promise;
+    const pages = document.createDocumentFragment();
+    for (let number = 1; number <= pdf.numPages && active(); number++) {
+      const page = await pdf.getPage(number);
+      const viewport = page.getViewport({ scale: 1500 / page.getViewport({ scale: 1 }).width });
+      const frame = document.createElement('div');
+      frame.className = 'pdf-page';
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.ceil(viewport.width);
+      canvas.height = Math.ceil(viewport.height);
+      canvas.setAttribute('aria-label', '原简历第 ' + number + ' 页');
+      frame.append(canvas);
+      await page.render({ canvas, canvasContext: canvas.getContext('2d'), viewport }).promise;
+      for (const line of await pdfPageLines(page)) {
+        const key = normalize(line.text);
+        let index = indexes.get(key)?.[0];
+        if (index === undefined && key.length >= 8) {
+          const candidates = sourceLines.filter(item => item.key.includes(key) || key.includes(item.key));
+          if (candidates.length) index = candidates.sort((a, b) =>
+            Math.abs(a.key.length - key.length) - Math.abs(b.key.length - key.length))[0].index;
+        }
+        const target = changed.has(index) ? index : cited.has(index) && changed.has(0) ? 0 : null;
+        if (target === null || !line.items.length) continue;
+        const corners = line.items.flatMap(item => {
+          const [x, y] = item.transform.slice(4);
+          const height = item.height || Math.hypot(item.transform[2], item.transform[3]) || 10;
+          return [x, x + item.width].flatMap(left => [y - height * .22, y + height * .82]
+            .map(top => viewport.convertToViewportPoint(left, top)));
+        });
+        const xs = corners.map(point => point[0]);
+        const ys = corners.map(point => point[1]);
+        const hit = document.createElement('button');
+        hit.type = 'button';
+        hit.className = 'paper-hit';
+        hit.dataset.change = target;
+        hit.dataset.sourceLine = index;
+        hit.setAttribute('aria-label', '查看原文第 ' + index + ' 行的改动');
+        Object.assign(hit.style, { left: Math.min(...xs) / viewport.width * 100 + '%',
+          top: Math.min(...ys) / viewport.height * 100 + '%',
+          width: (Math.max(...xs) - Math.min(...xs)) / viewport.width * 100 + '%',
+          height: (Math.max(...ys) - Math.min(...ys)) / viewport.height * 100 + '%' });
+        frame.append(hit);
+      }
+      pages.append(frame);
+      page.cleanup();
+    }
+    if (active()) area.replaceChildren(pages);
+  } finally {
+    await task.destroy();
+  }
+}
+
+function beginPrint(title, cleanup) {
+  const previousTitle = document.title;
+  document.title = title;
+  document.body.classList.add('print-resume');
+  window.addEventListener('afterprint', () => {
+    document.body.classList.remove('print-resume');
+    document.title = previousTitle;
+    cleanup();
+  }, { once: true });
+  window.print();
+}
+
+async function printPdfReview(preview) {
+  const output = $('#resume-print');
+  const imageLoads = [];
+  const sheets = [...preview.querySelectorAll('.pdf-page')].map(frame => {
+    const sheet = document.createElement('div');
+    sheet.className = 'pdf-print-page';
+    const image = document.createElement('img');
+    image.alt = '';
+    image.src = frame.querySelector('canvas').toDataURL('image/png');
+    imageLoads.push(image.decode().then(() => {
+      if (!image.naturalWidth || !image.naturalHeight) throw new Error('PDF page image is empty');
+    }));
+    sheet.append(image);
+    for (const source of frame.querySelectorAll('.pdf-replacement')) {
+      const replacement = document.createElement('div');
+      replacement.className = 'pdf-replacement';
+      replacement.innerHTML = source.innerHTML;
+      for (const property of ['left', 'top', 'width', 'minHeight']) replacement.style[property] = source.style[property];
+      sheet.append(replacement);
+    }
+    return sheet;
+  });
+  if (!sheets.length) return;
+  output.replaceChildren(...sheets);
+  await Promise.all(imageLoads);
+  await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  beginPrint('岗位定制简历-原版', () => output.replaceChildren());
+}
+
+function printResume(pages) {
+  const page = $('#resume-print');
+  page.replaceChildren(...pages.map(blocks => {
+    const sheet = document.createElement('div');
+    sheet.className = 'paper';
+    sheet.append(...blocks.map(block => paperBlock(block, false)));
+    return sheet;
+  }));
+  beginPrint('岗位定制简历-重排版', () => page.replaceChildren());
+}
+
+function applicationForm(job, buttonLabel, fromJD = false) {
+  return `<form class="section-title"><div class="fields">
+    ${Object.entries(INFO_FIELDS).map(([key, label]) => {
+      const required = key === 'company' || (fromJD && key === 'role');
+      const missing = fromJD && !job[key];
+      return `<label class="${missing ? 'missing' : ''}">${label}${required ? '（必填）' : ''}
+        <input name="${key}" value="${escapeHTML(job[key])}" ${required ? 'required' : ''}>
+        ${missing ? `<small>${required ? '请补充' : '可补充'}</small>` : ''}</label>`;
+    }).join('')}
+  </div><label>备注<textarea name="notes" rows="2">${escapeHTML(job.notes)}</textarea></label>
+  ${fromJD ? '' : manualJDFields(job)}
+  <button class="pri">${buttonLabel}</button></form>`;
+}
+
+function officialLink(url) {
+  const link = safeLink(url);
+  return link ? `<p class="section-title"><a href="${escapeHTML(link)}" target="_blank" rel="noopener noreferrer">打开官方投递页</a></p>` : '';
+}
+
+function manualJDFields(app) {
+  return `<label>JD 描述（选填）<textarea name="jd" rows="5" placeholder="粘贴岗位职责及要求">${escapeHTML(app.jd)}</textarea></label>
+  <label class="check"><input type="checkbox" name="analyze-jd"> 保存时分析匹配度</label>
+  <p class="m" data-jd-notice role="status"></p>`;
+}
+
+function manualJDUpdate(form, app = {}) {
+  const data = new FormData(form);
+  const jd = data.get('jd').trim();
+  if (data.has('analyze-jd') && (!jd || !hasProfile())) {
+    form.querySelector('[data-jd-notice]').textContent = !jd ? '先填写 JD，或取消勾选后保存。' : '请先补充档案，或取消勾选后只保存 JD。';
+    return null;
+  }
+  const unchanged = jd === (app.jd ?? '');
+  const analysis = data.has('analyze-jd') ? { ...analyzeJD(jd, state.profile), jd } :
+    (unchanged ? app.analysis ?? null : null);
+  if (analysis && data.has('analyze-jd')) rememberAnalysis(analysis);
+  return { jd, analysis, matchScore: analysis ? analysis.total : (unchanged ? app.matchScore ?? null : null) };
+}
+
+function readApplicationForm(form) {
+  const data = new FormData(form);
+  return Object.fromEntries([...Object.keys(INFO_FIELDS), 'notes'].map(key => [key, data.get(key).trim()]));
+}
+
+function checkRequired(form, fields) {
+  for (const key of fields) {
+    const input = form.elements.namedItem(key);
+    if (!input.value.trim()) {
+      input.value = '';
+      input.reportValidity();
+      input.focus();
+      return false;
+    }
+  }
+  return true;
+}
+
+function showJDForm(area, result, status) {
+  area.innerHTML = applicationForm(result.job, status === 'intent' ? '保存为意向' : '保存为已投递', true) + '<div data-duplicate></div>';
+  const form = area.querySelector('form');
+  const duplicate = area.querySelector('[data-duplicate]');
+  form.oninput = () => duplicate.replaceChildren();
+  form.onsubmit = event => {
+    event.preventDefault();
+    if (checkRequired(form, ['company', 'role'])) submitJD(duplicate, result, readApplicationForm(form), status);
+  };
+  (form.querySelector('.missing input[required]') ?? form.elements.namedItem('company')).focus();
+}
+
+function storeApplication(fields, existing) {
+  if (existing) Object.assign(existing, fields, { notes: fields.notes || existing.notes });
+  else state.applications.push({
+    notes: '', ...fields, id: Date.now().toString(36) + Math.random().toString(36).slice(2, 9),
+    offer: { salary: 0, costIndex: 0, scores: { cost: 5, ...Object.fromEntries(SK.map(([key]) => [key, 5])) } }
+  });
+  applicationNotice = existing ? '已更新投递记录。' : '已新增投递记录。';
+  save();
+  go('a');
+}
+
+function submitJD(area, result, job, status) {
+  const preparation = status === 'intent' ? confirmedPreparation(result) : null;
+  const fields = { ...job, status, source: 'jd', jd: result.jd, matchScore: result.total,
+    analysis: result, ...(preparation ? { preparation } : {}),
+    ...(safeLink(result.applicationUrl) ? { applicationUrl: result.applicationUrl } : {}) };
+  const existing = state.applications.find(app => normalize(app.company) === normalize(job.company)
+    && normalize(app.role) === normalize(job.role));
+  if (!existing) {
+    storeApplication(fields);
+    return;
+  }
+  area.innerHTML = `<div class="notice"><p>「${escapeHTML(existing.company)} · ${escapeHTML(existing.role)}」已存在，更新还是新建？</p>
+    <p class="m">更新后状态为「${ST[status]}」。</p>
+    <div class="actions"><button type="button" data-update>更新已有记录</button><button type="button" data-create>仍然新建</button>
+    <button type="button" data-cancel>取消</button></div></div>`;
+  const update = area.querySelector('[data-update]');
+  update.onclick = () => storeApplication(fields, existing);
+  area.querySelector('[data-create]').onclick = () => storeApplication(fields);
+  area.querySelector('[data-cancel]').onclick = () => area.replaceChildren();
+  update.focus();
+}
+
+function confirmedPreparation(result) {
+  const task = state.preparation;
+  const draft = state.rewrite;
+  if (!samePreparation(task, result) || !Array.isArray(task.packet?.evidence) ||
+      task.packet.verdict === 'hold' || !samePreparation(draft, result)) return null;
+  const original = ['', ...draft.source.split(/\r?\n/)];
+  if (draft.edits.length !== original.length || draft.edits.some((value, index) => value !== original[index] && !draft.decisions?.[index])) return null;
+  return {
+    verdict: task.packet.verdict, summary: task.packet.summary, gaps: task.packet.gaps,
+    evidence: task.packet.evidence.map(item => ({ requirement: item.requirement, quote: original[item.line] })),
+    ...(task.answer ? { clarification: { requirement: task.askedRequirement, answer: task.answer, confirmed: task.packet.confirmed ?? '' } } : {}),
+    reviewed: draft.edits.map((value, index) => draft.decisions?.[index] === 'reject' ? original[index] : value)
+  };
+}
+
+function renderApplications() {
+  main.innerHTML = `<h2>投递列表</h2>
+    ${applicationNotice ? `<p class="notice" role="status">${escapeHTML(applicationNotice)}</p>` : ''}
+    <details id="manual-entry" class="card"><summary>＋ 手动添加</summary>${applicationForm({}, '存入投递列表')}</details>
+    ${state.applications.length ? state.applications.map((app, index) => `<section class="card">
+      <div class="hd break"><b>${escapeHTML(app.company)}${app.role ? ' · ' + escapeHTML(app.role) : ''}</b><span class="m">${escapeHTML(app.city)}</span></div>
+      <div class="m break">${app.source === 'jd' ? 'JD 分析' : '手动'}
+        ${Number.isFinite(app.matchScore) ? ' · 匹配度 ' + app.matchScore : app.jd ? ' · 暂无匹配分' : ''}
+        ${app.industry ? ' · ' + escapeHTML(app.industry) : ''}</div>
+      ${app.notes ? `<p class="original break">${escapeHTML(app.notes)}</p>` : ''}
+      ${app.jd ? `<details><summary>查看 JD 原文</summary><p class="original break">${escapeHTML(app.jd)}</p></details>` : ''}
+      ${officialLink(app.applicationUrl)}
+      ${app.preparation ? `<details class="section-title"><summary>已确认的投递准备包</summary>
+        <p>${escapeHTML(VERDICTS[app.preparation.verdict])} · ${escapeHTML(app.preparation.summary)}</p>
+        <p class="m">${escapeHTML(Array.isArray(app.preparation.gaps) ? app.preparation.gaps.join('、') : '')}</p>
+        <p class="original break">${escapeHTML(Array.isArray(app.preparation.reviewed) ? app.preparation.reviewed.filter(Boolean).join('\n') : '')}</p>
+      </details>` : ''}
+      ${app.source === 'manual' ? `<details class="section-title"><summary>补充 JD 与匹配度</summary>
+        <form data-manual-jd="${index}">${manualJDFields(app)}<button>保存 JD</button></form></details>` : ''}
+      ${validAnalysis(app.analysis, app.jd) ? `<button class="section-title" type="button" data-open-analysis="${index}">查看完整匹配分析</button>` : ''}
+      <div class="row"><select data-status="${index}" aria-label="投递状态">
+        ${Object.entries(ST).map(([key, label]) => `<option value="${key}"${app.status === key ? ' selected' : ''}>${label}</option>`).join('')}
+      </select><button type="button" data-delete="${index}">删除</button></div></section>`).join('') : '<p class="m">还没有投递记录。</p>'}`;
+  applicationNotice = '';
+  $('#manual-entry form').onsubmit = event => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    if (checkRequired(form, ['company'])) {
+      const update = manualJDUpdate(form);
+      if (update) storeApplication({ ...readApplicationForm(form), ...update, status: 'applied', source: 'manual' });
+    }
+  };
+  main.querySelectorAll('[data-manual-jd]').forEach(form => {
+    form.onsubmit = event => {
+      event.preventDefault();
+      const app = state.applications[form.dataset.manualJd];
+      const update = manualJDUpdate(form, app);
+      if (update) storeApplication(update, app);
+    };
+  });
+  main.querySelectorAll('[data-open-analysis]').forEach(button => {
+    button.onclick = () => {
+      const app = state.applications[button.dataset.openAnalysis];
+      state.jdDraft = app.jd;
+      state.lastAnalysis = app.analysis;
+      save();
+      go('j');
+    };
+  });
+  main.querySelectorAll('[data-status]').forEach(select => {
+    select.onchange = () => {
+      state.applications[select.dataset.status].status = select.value;
+      save();
+    };
+  });
+  main.querySelectorAll('[data-delete]').forEach(button => {
+    button.onclick = () => {
+      state.applications.splice(Number(button.dataset.delete), 1);
+      save();
+      renderApplications();
+    };
+  });
+}
+
+function renderBalance() {
+  const allOffers = state.applications.filter(app => app.status === 'offer');
+  main.innerHTML = '<h2>Offer 天平</h2>';
+  if (!allOffers.length) {
+    main.innerHTML += '<p class="m">还没有 offer。在「投递」里把状态改为「拿到 offer」，它就会出现在这里。</p>';
+    return;
+  }
+  const ids = allOffers.map(app => app.id);
+  const selected = [...new Set(state.offerPair.filter(id => ids.includes(id)).concat(ids))].slice(0, 2);
+  const offers = selected.map(id => allOffers.find(app => app.id === id));
+  if (allOffers.length > 2) {
+    main.innerHTML += `<section class="card"><h3>选择两份 Offer</h3><div class="fields">
+      ${selected.map((id, side) => `<label>${side ? '右侧' : '左侧'}<select data-pair="${side}">
+        ${allOffers.map((app, index) => `<option value="${index}"${app.id === id ? ' selected' : ''}
+          ${app.id === selected[1 - side] ? ' disabled' : ''}>${escapeHTML([app.company, app.role, app.city].filter(Boolean).join(' · '))}</option>`).join('')}
+      </select></label>`).join('')}</div></section>`;
+  }
+  main.innerHTML += `<svg viewBox="0 0 300 120" class="bm" aria-hidden="true">
+    <g id="beam" class="bg"><line x1="30" y1="50" x2="270" y2="50" stroke="var(--fg)" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="30" cy="50" r="8" fill="var(--acc)"/><circle cx="270" cy="50" r="8" fill="var(--acc)"/></g>
+    <path d="M150 50 L132 110 L168 110Z" fill="var(--line)"/>
+    <text id="beam-left" x="15" y="20" font-size="12" fill="var(--mut)"></text>
+    <text id="beam-right" x="285" y="20" text-anchor="end" font-size="12" fill="var(--mut)"></text></svg>
+  <div class="card"><h3>权重（0–10）</h3>${WK.map(([key, label]) =>
+    `<label class="sl">${label}<input type="range" min="0" max="10" value="${state.weights[key]}" data-weight="${key}"><b>${state.weights[key]}</b></label>`).join('')}</div>
+  <div class="col">${offers.map((app, index) => `<div class="card" data-offer="${index}">
+    <div class="hd break"><b>${escapeHTML(app.company)} · ${escapeHTML(app.role)}</b><span class="sc">0</span></div>
+    <div class="bar"><i></i></div><div class="g">
+    <label>月薪（k）<input type="number" min="0" step="any" data-score="salary" value="${app.offer.salary}"></label>
+    <label>月生活成本（k）<input type="number" min="0" step="any" data-score="costIndex" value="${app.offer.costIndex}"></label>
+    <label>成本评分（省 = 高）<input type="number" min="0" max="10" step="any" data-score="cost" value="${app.offer.scores.cost}"></label>
+    ${SK.map(([key, label]) => `<label>${label}<input type="number" min="0" max="10" step="any" data-score="${key}" value="${app.offer.scores[key]}"></label>`).join('')}
+    </div></div>`).join('')}</div>
+  <p class="m">按当前所选 Offer 的最高月薪与最低生活成本换算。生活成本留空或为 0 时使用手动评分。</p>`;
+  const cards = [...main.querySelectorAll('[data-offer]')];
+  main.querySelectorAll('[data-pair]').forEach(select => {
+    select.onchange = () => {
+      selected[Number(select.dataset.pair)] = allOffers[Number(select.value)].id;
+      state.offerPair = selected;
+      save();
+      renderBalance();
+      main.querySelector('[data-pair="' + select.dataset.pair + '"]')?.focus();
+    };
+  });
+
+  function updateScores() {
+    const weights = state.weights;
+    const totalWeight = WK.reduce((sum, [key]) => sum + weights[key], 0);
+    const maxSalary = Math.max(0, ...offers.map(app => app.offer.salary));
+    const minCost = Math.min(...offers.map(app => app.offer.costIndex).filter(cost => cost > 0));
+    const scores = offers.map(({ offer }) => {
+      const values = {
+        ...offer.scores,
+        salary: maxSalary ? offer.salary / maxSalary * 10 : 0,
+        cost: offer.costIndex > 0 ? minCost / offer.costIndex * 10 : offer.scores.cost
+      };
+      return totalWeight ? Math.round(WK.reduce((sum, [key]) => sum + weights[key] * values[key], 0) / totalWeight * 10) : 0;
+    });
+    const ranks = scores.map((_, index) => index).sort((a, b) => scores[b] - scores[a]);
+    ranks.forEach((index, rank) => {
+      const card = cards[index];
+      card.style.order = rank;
+      card.querySelector('.sc').textContent = scores[index];
+      card.querySelector('.bar i').style.width = scores[index] + '%';
+    });
+    const angle = Math.max(-14, Math.min(14, ((scores[1] ?? scores[0]) - scores[0]) * 0.6));
+    $('#beam').style.transform = `rotate(${angle}deg)`;
+  }
+
+  $('#beam-left').textContent = offers[0].company.slice(0, 10);
+  $('#beam-right').textContent = offers[1]?.company.slice(0, 10) ?? '';
+  main.querySelectorAll('[data-weight]').forEach(input => {
+    input.oninput = () => {
+      state.weights[input.dataset.weight] = Number(input.value);
+      input.nextElementSibling.textContent = input.value;
+      save();
+      updateScores();
+    };
+  });
+  main.querySelectorAll('[data-score]').forEach(input => {
+    input.oninput = () => {
+      const offer = offers[input.closest('[data-offer]').dataset.offer].offer;
+      const key = input.dataset.score;
+      const value = Math.max(0, Number(input.value) || 0);
+      if (key === 'salary' || key === 'costIndex') offer[key] = value;
+      else offer.scores[key] = Math.min(10, value);
+      save();
+      updateScores();
+    };
+    input.onchange = () => {
+      const offer = offers[input.closest('[data-offer]').dataset.offer].offer;
+      input.value = offer[input.dataset.score] ?? offer.scores[input.dataset.score];
+    };
+  });
+  updateScores();
+}
+
+openWorkspace();
+
+</script></body></html>
