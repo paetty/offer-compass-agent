@@ -5,6 +5,7 @@ import unittest
 from pathlib import Path
 
 import offer_compass_runtime
+import offer_compass_tools
 
 
 class AgentRuntimeTest(unittest.TestCase):
@@ -33,20 +34,22 @@ class AgentRuntimeTest(unittest.TestCase):
             "get_candidate_profile", "parse_job_description", "retrieve_resume_evidence",
             "assess_job_fit", "create_clarifying_question"])
 
-        second = self.runtime.run(dict(self.body, run_id=first["run_id"],
+        second = self.runtime.run(dict(self.body, run_id=first["run_id"], confirmed=True,
                                        answer="在课程项目中负责实验设计与结果分析，无线上工作经验。"))
-        self.assertEqual(second["stage"], "fit_assessed")
+        self.assertEqual(second["stage"], "ready_for_review")
         self.assertEqual(second["status"], "completed")
-        self.assertEqual(second["next_action"], "review_fit_assessment")
+        self.assertEqual(second["next_action"], "review_resume_patches")
         self.assertEqual(second["verdict"], "apply")
-        self.assertEqual(len(second["tool_trace"]), 9)
+        self.assertEqual(len(second["patches"]), 1)
+        self.assertTrue(second["patches"][0]["verified"])
+        self.assertEqual(len(second["tool_trace"]), 12)
         self.assertEqual(self.runtime.get(first["run_id"])["revision"], 2)
 
         with sqlite3.connect(str(self.db_path)) as db:
             run = db.execute("SELECT stage, status, revision FROM agent_runs").fetchone()
             calls = db.execute("SELECT tool_name, status, input_json, output_json FROM agent_tool_calls ORDER BY sequence").fetchall()
-        self.assertEqual(run, ("fit_assessed", "completed", 2))
-        self.assertEqual(len(calls), 9)
+        self.assertEqual(run, ("ready_for_review", "completed", 2))
+        self.assertEqual(len(calls), 12)
         self.assertTrue(all(item[1] == "completed" for item in calls))
         json.loads(calls[0][2])
         json.loads(calls[0][3])
@@ -55,6 +58,27 @@ class AgentRuntimeTest(unittest.TestCase):
         first = self.runtime.run(self.body)
         with self.assertRaises(ValueError):
             self.runtime.run(dict(self.body, run_id=first["run_id"], jd="不同的 JD"))
+
+    def test_unconfirmed_answer_is_not_evidence(self):
+        first = self.runtime.run(self.body)
+        second = self.runtime.run(dict(self.body, run_id=first["run_id"], confirmed=False,
+                                       answer="我可能做过一些 A/B 测试。"))
+        self.assertEqual(second["verdict"], "conditional")
+        self.assertFalse(second["clarification"]["confirmed"])
+        self.assertTrue(any("A/B" in gap for gap in second["gaps"]))
+
+    def test_verifier_blocks_new_metrics_and_responsibility_upgrade(self):
+        before = "参与数据分析，使用 SQL 复核结果。"
+        profile = offer_compass_tools.get_candidate_profile([before], {"SQL": 2})
+        result = offer_compass_tools.verify_resume_patches([{
+            "patch_id": "patch_01", "source_line": 1, "before": before,
+            "after": "主导数据分析，使用 SQL 将效率提升 50%。",
+            "reason": "测试", "requirement_id": "req_01", "evidence_ids": ["resume_line_0001"]
+        }], profile)
+        self.assertEqual(result["accepted_count"], 0)
+        reasons = "、".join(result["rejected"][0]["verification_reasons"])
+        self.assertIn("数字", reasons)
+        self.assertIn("主导", reasons)
 
 
 if __name__ == "__main__":

@@ -107,9 +107,9 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
         if route.path == "/":
             self.send_body(200, (ROOT / "Offer Compass.html").read_bytes(), "text/html; charset=utf-8")
         elif route.path == "/api/health":
-            self.send_json(200, {"app": "Offer Compass", "agent_version": "4.1"})
+            self.send_json(200, {"app": "Offer Compass", "agent_version": "4.3"})
         elif route.path == "/api/agent":
-            self.send_json(200, {"configured": offer_compass_agent.configured(), "version": "4.1"})
+            self.send_json(200, {"configured": offer_compass_agent.configured(), "version": "4.3"})
         elif route.path == "/api/agent/run":
             run_id = parse_qs(route.query).get("run_id", [""])[0]
             if not run_id or len(run_id) > 80:

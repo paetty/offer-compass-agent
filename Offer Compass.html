@@ -1570,7 +1570,7 @@ function localPreparation(result, profile, task) {
       '已找到的证据列在下方，尚待确认的要求仍保留为缺口。' };
 }
 
-const REVIEW_DRAFT_VERSION = 3;
+const REVIEW_DRAFT_VERSION = 4;
 
 function layoutAssessment(before, after, mode) {
   const a = Array.from(String(before ?? '').trim()).length;
@@ -1626,6 +1626,23 @@ function reviewDraft(result, source, evidence, addition = '') {
   });
   return { version: REVIEW_DRAFT_VERSION, jd: result.jd, source, edits: [summary, ...edits], decisions: {}, origins: [],
     references: { ...references, 0: summary ? '本次由你补充的原话' : '' } };
+}
+
+function reviewDraftFromPatches(result, source, patches) {
+  const originals = source.split(/\r?\n/);
+  const edits = ['', ...originals];
+  const references = { 0: '' };
+  const accepted = [];
+  for (const patch of Array.isArray(patches) ? patches : []) {
+    const line = Number(patch.source_line);
+    if (!Number.isInteger(line) || line < 1 || line > originals.length ||
+        originals[line - 1] !== patch.before || !patch.verified) continue;
+    edits[line] = patch.after;
+    references[line] = patch.reason || '已通过证据与事实校验';
+    accepted.push({ ...patch });
+  }
+  return { version: REVIEW_DRAFT_VERSION, jd: result.jd, source, edits, decisions: {}, origins: [],
+    references, patches: accepted, generatedBy: 'agent_v4_3' };
 }
 
 function samePreparation(item, result, source = state.profile.resumeText) {
@@ -1825,7 +1842,7 @@ async function renderPreparation(result) {
   }
   const packet = task?.packet;
   const trace = task?.tool_trace ?? packet?.tool_trace ?? [];
-  area.innerHTML = `<p class="notice"><strong>Python Agent V4.1 · 投递判断</strong>先回答“值不值得投”。Agent 会调用档案、JD 解析、证据检索和匹配判断工具；缺少关键事实时只追问一个会改变判断的问题。</p>
+  area.innerHTML = `<p class="notice"><strong>Python Agent V4.3 · 证据约束投递准备</strong>Agent 会调用档案、JD 解析、证据检索和匹配判断工具；结构化简历补丁还需要独立通过数字、工具、职责和原文定位校验。</p>
     <form id="prepare-form" class="section-title">
     <label>任务目标<textarea name="goal" maxlength="1000" rows="2">${escapeHTML(task?.goal ?? DEFAULT_PREP_GOAL)}</textarea></label>
     <p class="m" id="model-status">Agent 在本地 Python 服务中执行，工具输入、输出和状态转移会写入 SQLite。</p>
@@ -1834,7 +1851,7 @@ async function renderPreparation(result) {
     ${task?.question ? `<form id="clarify-form" class="card">
       <h4>待确认 · ${escapeHTML(task.requirement)}</h4><p>${escapeHTML(task.question)}</p>
       <label>你的补充<textarea name="answer" maxlength="1200" rows="3"></textarea></label>
-      ${task.mode === 'local' ? '<label class="check"><input type="checkbox" name="confirmed"> 我确认这段经历能够证明这项要求</label><br>' : ''}
+      <label class="check"><input type="checkbox" name="confirmed"> 我确认这是真实经历，可作为本次判断证据</label><br>
       <label class="check"><input type="checkbox" name="include"> 将补充的原话作为待审阅内容加入简历</label>
       <div class="actions"><button>补充后继续</button><button type="button" id="skip-clarification">暂时无法确认</button></div>
       ${task.mode === 'model' ? '<p class="m">继续时，补充回答也会用于模型核对。</p>' : ''}
@@ -1843,10 +1860,12 @@ async function renderPreparation(result) {
       <p class="m">${task.mode === 'model' ? '模型 Agent' : '本地规则'} · ${escapeHTML(packet.summary)}</p>
       <strong>对应的简历原文</strong>
       <ul class="agent-evidence">${(Array.isArray(packet.evidence) ? packet.evidence : []).map(item =>
-        `<li><b>${escapeHTML(item.requirement)}</b> · ${escapeHTML(source.split(/\r?\n/)[item.line - 1])}</li>`).join('') || '<li>暂无可引用的原文</li>'}</ul>
+        `<li><b>${escapeHTML(item.requirement)}</b><small> ${escapeHTML(item.level || item.status || '')}</small><br>${escapeHTML(item.text || source.split(/\r?\n/)[item.line - 1] || '')}</li>`).join('') || '<li>暂无可引用的原文</li>'}</ul>
       <strong>待确认或缺失</strong><p class="m">${escapeHTML(Array.isArray(packet.gaps) && packet.gaps.length ? packet.gaps.join('、') : '暂无')}</p>
       ${task.answer ? `<p class="m">${packet.confirmed ? '你确认的依据 · ' + escapeHTML(packet.confirmed) : '你补充的原话'} · ${escapeHTML(task.answer)}</p>` : ''}
-      ${packet.verdict === 'hold' ? '<p class="m">先核对缺口，再准备定制稿。</p>' : '<button type="button" id="review-packet">进入红绿审阅</button>'}
+      ${packet.patches?.length ? `<p class="m">已有 ${packet.patches.length} 处修改通过事实校验。</p><button type="button" id="review-packet">进入红绿审阅</button>` :
+        packet.verdict === 'hold' ? '<p class="m">先核对缺口，再准备定制稿。</p>' : '<p class="m">当前没有通过校验的安全修改，不自动改写。</p>'}
+      ${packet.rejected_patches?.length ? `<p class="m">${packet.rejected_patches.length} 处建议被校验器阻止。</p>` : ''}
     </section>` : ''}
     ${trace.length ? `<details class="card agent-trace"><summary>Agent 执行轨迹 · ${trace.length} 步</summary>
       <ol>${trace.map(item => `<li><b>${escapeHTML(item.summary || item.tool)}</b><small> ${escapeHTML(item.tool)} · ${Number(item.duration_ms) || 0}ms</small></li>`).join('')}</ol>
@@ -1893,7 +1912,7 @@ async function runPreparation(area, result, task) {
       const lines = task.source.split(/\r?\n/).map(line => /@|(?:手机号|联系电话|住址|手机|电话)\s*[:：]/u.test(line) ? '' : line);
       const response = await fetch('/api/agent/run', { method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ run_id: task.run_id ?? '', jd: task.jd, goal: task.goal,
-          answer: task.answer ?? '', skip: Boolean(task.skip), lines,
+          answer: task.answer ?? '', confirmed: task.confirmed === true, skip: Boolean(task.skip), lines,
           levels: Object.fromEntries(resumeLevels(workspace.profile)) }), signal: AbortSignal.timeout(30000) });
       if (!response.ok) throw new Error('model');
       outcome = await response.json();
@@ -1902,13 +1921,12 @@ async function runPreparation(area, result, task) {
     }
     if (state !== workspace || !area.isConnected || !samePreparation(task, result)) return;
     const { question, requirement, packet, ...base } = task;
-    const next = { ...base, mode: databaseMode && !demo ? 'agent_v4_1' : 'local',
+    const next = { ...base, mode: databaseMode && !demo ? 'agent_v4_3' : 'local',
       run_id: outcome.run_id ?? task.run_id, tool_trace: outcome.tool_trace ?? task.tool_trace };
     state.preparation = outcome.question ? { ...next, question: outcome.question, requirement: outcome.requirement,
       requirement_id: outcome.requirement_id } : { ...next, askedRequirement: task.requirement, packet: outcome };
-    if (!outcome.question && outcome.verdict !== 'hold') {
-      state.rewrite = reviewDraft(result, task.source, outcome.evidence, task.include ? task.answer : '');
-    }
+    if (!outcome.question && outcome.patches?.length) state.rewrite = reviewDraftFromPatches(result, task.source, outcome.patches);
+    else if (!outcome.question && databaseMode && !demo) delete state.rewrite;
     save();
     renderPreparation(result);
   } catch {

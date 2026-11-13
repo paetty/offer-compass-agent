@@ -70,7 +70,7 @@ async function js(expression){
   return reply.result.value;
 }
 async function wait(fn,label){
-  for(let i=0;i<150;i++){
+  for(let i=0;i<300;i++){
     if(await fn())return;
     await new Promise(resolve=>setTimeout(resolve,100));
   }
@@ -103,7 +103,7 @@ async function run(){
   await new Promise((resolve,reject)=>fixture.on('exit',code=>code===0?resolve():reject(Error('fixture'))));
   await wait(()=>fetch(url+'/api/health').then(r=>r.ok).catch(()=>false),'service');
   const health=await fetch(url+'/api/health').then(r=>r.json());
-  assert.equal(health.agent_version,'4.1');
+  assert.equal(health.agent_version,'4.3');
   const agentBody={jd:'岗位要求：\n1. 熟练 SQL 并能够进行数据分析\n2. 具备独立 A/B 测试经验',goal:'判断是否值得投递',
     lines:['项目经历','使用 SQL 分析用户留存，完成指标定义和结果复核。'],levels:{SQL:2}};
   const agentStart=await fetch(url+'/api/agent/run',{method:'POST',headers:{'Content-Type':'application/json','Origin':url},body:JSON.stringify(agentBody)}).then(r=>r.json());
@@ -124,6 +124,12 @@ async function run(){
   await wait(()=>js("typeof ready!=='undefined' && ready && $('#resume-file')"),'app ready');
   await upload(readFileSync(join(temp,'source.docx')).toString('base64'),'source.docx');
   await wait(()=>js("$('#resume-style').textContent.includes('含嵌入图片') && $('#resume-style').textContent.includes('含分栏')"),'style detection');
+  await js("go('j'); $('#jd').value='岗位：数据分析师\\n要求熟练 SQL 并具备数据分析经验\\n具备独立 A/B 测试经验'; $('#jd').dispatchEvent(new Event('input')); $('#analyze').click(); $('#show-preparation').click(); $('#prepare-form').requestSubmit()");
+  await wait(()=>js("state.preparation?.question && Boolean($('#clarify-form'))"),'agent asks one clarification');
+  await check("document.querySelectorAll('.agent-trace li').length===5 && state.preparation.run_id.startsWith('run_')",'agent trace and persistent run id');
+  await js("$('#clarify-form textarea[name=answer]').value='在课程项目中负责实验设计与结果分析。'; $('#clarify-form input[name=confirmed]').checked=true; $('#clarify-form').requestSubmit()");
+  await wait(()=>js("state.preparation?.packet?.stage==='ready_for_review'"),'agent creates verified patch');
+  await check("state.rewrite?.generatedBy==='agent_v4_3' && state.rewrite.patches.length>0 && state.rewrite.patches.every(item=>item.verified) && document.querySelectorAll('.agent-trace li').length>=12",'only verified structured patches enter review');
   await review();
   try {
     await wait(()=>js("Boolean($('.word-preview')?.shadowRoot.querySelector('img')) || Boolean($('#original-preview .pdf-page canvas'))"),'Word preview with portrait or native PDF');
@@ -176,6 +182,6 @@ async function run(){
   console.log('QA ' + temp);
   console.log('PASS Word and PDF native preview, inline review, file export, and database restoration');
 }
-const watchdog=setTimeout(()=>{browser.kill();server.kill();fixture.kill();process.exit(2);},70000);
+const watchdog=setTimeout(()=>{browser.kill();server.kill();fixture.kill();process.exit(2);},120000);
 run().catch(error=>{console.error(error,errors,'QA '+temp);process.exitCode=1;})
   .finally(()=>{clearTimeout(watchdog);browser.kill();server.kill();fixture.kill();});

@@ -11,7 +11,8 @@ from datetime import datetime, timezone
 from offer_compass_tools import TOOL_REGISTRY
 
 
-STAGES = {"jd_received", "evidence_retrieval", "clarification_required", "fit_assessed"}
+STAGES = {"jd_received", "evidence_retrieval", "clarification_required", "fit_assessed",
+          "rewrite_generated", "verification_failed", "ready_for_review"}
 
 
 def _now():
@@ -65,6 +66,8 @@ def _validate(body):
     for key, maximum in (("goal", 1000), ("answer", 1200), ("run_id", 80)):
         if not isinstance(body.get(key, ""), str) or len(body.get(key, "")) > maximum:
             raise ValueError("invalid request")
+    if "confirmed" in body and type(body["confirmed"]) is not bool:
+        raise ValueError("invalid request")
 
 
 def _input_hash(jd, lines):
@@ -133,6 +136,11 @@ class AgentRuntime:
             "retrieve_resume_evidence": "已找到 {} 项匹配证据".format(result.get("matched_count", 0)),
             "assess_job_fit": "已生成投递判断：{}".format(result.get("verdict", "conditional")),
             "create_clarifying_question": "已生成 1 个关键追问",
+            "record_candidate_clarification": "已记录用户回答（{}）".format(
+                "已确认" if result.get("confirmed") else "未作为证据"),
+            "generate_resume_patches": "已生成 {} 处结构化修改".format(result.get("patch_count", 0)),
+            "verify_resume_patches": "修改校验：{} 处通过，{} 处阻止".format(
+                result.get("accepted_count", 0), result.get("rejected_count", 0)),
         }
         return labels.get(name, "已完成")
 
@@ -160,8 +168,9 @@ class AgentRuntime:
         waiting = state.get("question")
         answer = body.get("answer", "").strip()
         if waiting and (answer or body.get("skip") is True):
-            clarification = {"requirement_id": waiting["requirement_id"],
-                             "answer": answer if answer else "", "skipped": body.get("skip") is True}
+            clarification = self._tool(state, "record_candidate_clarification", {
+                "question": waiting, "answer": answer if answer else "",
+                "confirmed": body.get("confirmed") is True, "skipped": body.get("skip") is True})
             state["clarification"] = clarification
             state.pop("question", None)
         assessment = self._tool(state, "assess_job_fit", {
@@ -172,8 +181,27 @@ class AgentRuntime:
             state.update({"stage": "clarification_required", "status": "waiting", "question": question,
                           "assessment": assessment})
         else:
-            state.update({"stage": "fit_assessed", "status": "completed", "assessment": assessment})
+            state.update({"stage": "fit_assessed", "status": "running", "assessment": assessment})
             state.pop("question", None)
+            patch_result = {"patches": [], "patch_count": 0}
+            verification = {"accepted": [], "rejected": [], "accepted_count": 0, "rejected_count": 0}
+            if assessment["verdict"] != "hold" and assessment["strong_count"]:
+                state["stage"] = "rewrite_generated"
+                patch_result = self._tool(state, "generate_resume_patches", {
+                    "jd": state["jd"], "requirements": parsed["requirements"],
+                    "assessment": assessment, "profile": profile})
+                verification = self._tool(state, "verify_resume_patches", {
+                    "patches": patch_result["patches"], "profile": profile,
+                    "clarification": clarification})
+            if verification["accepted"]:
+                state["stage"] = "ready_for_review"
+            elif verification["rejected"]:
+                state["stage"] = "verification_failed"
+            else:
+                state["stage"] = "fit_assessed"
+            state["status"] = "completed"
+            state["patches"] = verification["accepted"]
+            state["rejected_patches"] = verification["rejected"]
         self._save(state)
         return self.public(state)
 
@@ -186,9 +214,13 @@ class AgentRuntime:
     @staticmethod
     def public(state):
         assessment = state.get("assessment", {})
-        evidence = [{"line": item.get("line"), "requirement": item["requirement"],
-                     "status": item["status"], "source": item.get("source")}
-                    for item in assessment.get("requirements", []) if item.get("line")]
+        evidence = [{"evidence_id": item.get("evidence_id"), "line": item.get("line"),
+                     "text": item.get("text") or item.get("answer"),
+                     "requirement_id": item["requirement_id"], "requirement": item["requirement"],
+                     "status": item["status"], "level": item.get("evidence_level"),
+                     "source": item.get("source")}
+                    for item in assessment.get("requirements", [])
+                    if item.get("line") or item.get("source") == "candidate_confirmation"]
         gaps = [item["requirement"] for item in assessment.get("gaps", [])]
         verdict = assessment.get("verdict")
         summary = {
@@ -197,12 +229,20 @@ class AgentRuntime:
             "hold": "当前可验证的经历证据不足，建议先补充关键信息。",
         }.get(verdict, "正在核对档案证据。")
         question = state.get("question")
-        return {"run_id": state["run_id"], "stage": state["stage"], "status": state["status"],
+        next_actions = {"clarification_required": "wait_for_user", "ready_for_review": "review_resume_patches",
+                        "verification_failed": "inspect_verification_failure", "fit_assessed": "review_fit_assessment"}
+        return {"run_id": state["run_id"], "agent_version": "4.3",
+                "stage": state["stage"], "status": state["status"],
                 "revision": state["revision"], "verdict": verdict, "summary": summary,
                 "evidence": evidence[:10], "gaps": gaps[:10],
                 "question": question["question"] if question else None,
                 "requirement": question["requirement"] if question else None,
                 "requirement_id": question["requirement_id"] if question else None,
-                "next_action": "wait_for_user" if question else "review_fit_assessment",
+                "patches": state.get("patches", []),
+                "rejected_patches": [{"patch_id": item.get("patch_id"),
+                                      "reasons": item.get("verification_reasons", [])}
+                                     for item in state.get("rejected_patches", [])],
+                "clarification": state.get("clarification"),
+                "next_action": next_actions.get(state["stage"], "review_fit_assessment"),
                 "tool_trace": state.get("tool_trace", [])}
 
