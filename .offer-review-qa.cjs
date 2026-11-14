@@ -103,7 +103,7 @@ async function run(){
   await new Promise((resolve,reject)=>fixture.on('exit',code=>code===0?resolve():reject(Error('fixture'))));
   await wait(()=>fetch(url+'/api/health').then(r=>r.ok).catch(()=>false),'service');
   const health=await fetch(url+'/api/health').then(r=>r.json());
-  assert.equal(health.agent_version,'4.3');
+  assert.equal(health.agent_version,'4.5');
   const agentBody={jd:'岗位要求：\n1. 熟练 SQL 并能够进行数据分析\n2. 具备独立 A/B 测试经验',goal:'判断是否值得投递',
     lines:['项目经历','使用 SQL 分析用户留存，完成指标定义和结果复核。'],levels:{SQL:2}};
   const agentStart=await fetch(url+'/api/agent/run',{method:'POST',headers:{'Content-Type':'application/json','Origin':url},body:JSON.stringify(agentBody)}).then(r=>r.json());
@@ -130,6 +130,9 @@ async function run(){
   await js("$('#clarify-form textarea[name=answer]').value='在课程项目中负责实验设计与结果分析。'; $('#clarify-form input[name=confirmed]').checked=true; $('#clarify-form').requestSubmit()");
   await wait(()=>js("state.preparation?.packet?.stage==='ready_for_review'"),'agent creates verified patch');
   await check("state.rewrite?.generatedBy==='agent_v4_3' && state.rewrite.patches.length>0 && state.rewrite.patches.every(item=>item.verified) && document.querySelectorAll('.agent-trace li').length>=12",'only verified structured patches enter review');
+  await wait(()=>js("document.querySelectorAll('#agent-history [data-history-run]').length>=2"),'agent run history');
+  await js("$('#agent-history [data-history-run]').click()");
+  await wait(()=>js("document.querySelectorAll('#agent-history [data-run-detail] ol li').length>0"),'historical run trace detail');
   await review();
   try {
     await wait(()=>js("Boolean($('.word-preview')?.shadowRoot.querySelector('img')) || Boolean($('#original-preview .pdf-page canvas'))"),'Word preview with portrait or native PDF');

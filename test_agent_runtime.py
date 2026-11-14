@@ -44,6 +44,11 @@ class AgentRuntimeTest(unittest.TestCase):
         self.assertTrue(second["patches"][0]["verified"])
         self.assertEqual(len(second["tool_trace"]), 12)
         self.assertEqual(self.runtime.get(first["run_id"])["revision"], 2)
+        history = self.runtime.list_runs(10)
+        self.assertEqual(history["agent_version"], "4.5")
+        self.assertEqual(len(history["runs"]), 1)
+        self.assertEqual(history["runs"][0]["stage"], "ready_for_review")
+        self.assertEqual(history["runs"][0]["patch_count"], 1)
 
         with sqlite3.connect(str(self.db_path)) as db:
             run = db.execute("SELECT stage, status, revision FROM agent_runs").fetchone()

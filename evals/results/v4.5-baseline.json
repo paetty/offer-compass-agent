@@ -1,0 +1,110 @@
+{
+  "agent_version": "4.5",
+  "generated_at": "2026-11-14T06:26:38.343886+00:00",
+  "total_cases": 12,
+  "passed_cases": 12,
+  "metrics": {
+    "case_pass_rate": 1.0,
+    "citation_validity": 1.0,
+    "verdict_accuracy": 1.0,
+    "tool_success_rate": 1.0
+  },
+  "cases": [
+    {
+      "id": "sql_data_ready",
+      "type": "flow",
+      "passed": true,
+      "stage": "ready_for_review",
+      "verdict": "apply",
+      "errors": []
+    },
+    {
+      "id": "ab_missing_requires_question",
+      "type": "flow",
+      "passed": true,
+      "stage": "clarification_required",
+      "verdict": "conditional",
+      "errors": []
+    },
+    {
+      "id": "self_rating_is_not_experience",
+      "type": "flow",
+      "passed": true,
+      "stage": "clarification_required",
+      "verdict": "hold",
+      "errors": []
+    },
+    {
+      "id": "negated_sql_is_not_evidence",
+      "type": "flow",
+      "passed": true,
+      "stage": "clarification_required",
+      "verdict": "hold",
+      "errors": []
+    },
+    {
+      "id": "prd_patch_ready",
+      "type": "flow",
+      "passed": true,
+      "stage": "ready_for_review",
+      "verdict": "apply",
+      "errors": []
+    },
+    {
+      "id": "bonus_self_rating_does_not_raise_verdict",
+      "type": "flow",
+      "passed": true,
+      "stage": "fit_assessed",
+      "verdict": "hold",
+      "errors": []
+    },
+    {
+      "id": "confirmed_answer_becomes_evidence",
+      "type": "flow",
+      "passed": true,
+      "stage": "fit_assessed",
+      "verdict": "apply",
+      "errors": []
+    },
+    {
+      "id": "unconfirmed_answer_stays_gap",
+      "type": "flow",
+      "passed": true,
+      "stage": "fit_assessed",
+      "verdict": "hold",
+      "errors": []
+    },
+    {
+      "id": "advertising_metrics_are_preserved",
+      "type": "flow",
+      "passed": true,
+      "stage": "ready_for_review",
+      "verdict": "apply",
+      "errors": []
+    },
+    {
+      "id": "duplicate_source_is_blocked",
+      "type": "flow",
+      "passed": true,
+      "stage": "verification_failed",
+      "verdict": "apply",
+      "errors": []
+    },
+    {
+      "id": "fabricated_metric_and_leadership_blocked",
+      "type": "verifier",
+      "passed": true,
+      "stage": null,
+      "verdict": null,
+      "errors": []
+    },
+    {
+      "id": "safe_label_rewrite_passes",
+      "type": "verifier",
+      "passed": true,
+      "stage": null,
+      "verdict": null,
+      "errors": []
+    }
+  ]
+}

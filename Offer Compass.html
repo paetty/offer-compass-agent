@@ -1842,7 +1842,7 @@ async function renderPreparation(result) {
   }
   const packet = task?.packet;
   const trace = task?.tool_trace ?? packet?.tool_trace ?? [];
-  area.innerHTML = `<p class="notice"><strong>Python Agent V4.3 · 证据约束投递准备</strong>Agent 会调用档案、JD 解析、证据检索和匹配判断工具；结构化简历补丁还需要独立通过数字、工具、职责和原文定位校验。</p>
+  area.innerHTML = `<p class="notice"><strong>Python Agent V4.5 · 证据约束投递准备</strong>Agent 会调用档案、JD 解析、证据检索和匹配判断工具；结构化简历补丁还需要独立通过数字、工具、职责和原文定位校验。${task?.run_id ? `<br><small>已恢复当前任务 · ${escapeHTML(task.run_id)}</small>` : ''}</p>
     <form id="prepare-form" class="section-title">
     <label>任务目标<textarea name="goal" maxlength="1000" rows="2">${escapeHTML(task?.goal ?? DEFAULT_PREP_GOAL)}</textarea></label>
     <p class="m" id="model-status">Agent 在本地 Python 服务中执行，工具输入、输出和状态转移会写入 SQLite。</p>
@@ -1869,7 +1869,8 @@ async function renderPreparation(result) {
     </section>` : ''}
     ${trace.length ? `<details class="card agent-trace"><summary>Agent 执行轨迹 · ${trace.length} 步</summary>
       <ol>${trace.map(item => `<li><b>${escapeHTML(item.summary || item.tool)}</b><small> ${escapeHTML(item.tool)} · ${Number(item.duration_ms) || 0}ms</small></li>`).join('')}</ol>
-      ${task?.run_id ? `<p class="m">Run ID · ${escapeHTML(task.run_id)}</p>` : ''}</details>` : ''}`;
+      ${task?.run_id ? `<p class="m">Run ID · ${escapeHTML(task.run_id)}</p>` : ''}</details>` : ''}
+    ${databaseMode && !demo ? '<details class="card" id="agent-history"><summary>历史 Agent 任务</summary><div data-runs class="section-title">正在读取…</div><div data-run-detail></div></details>' : ''}`;
   const form = $('#prepare-form');
   form.onsubmit = event => {
     event.preventDefault();
@@ -1892,10 +1893,30 @@ async function renderPreparation(result) {
   if (review) review.onclick = () => $('#show-rewrite').click();
   if (databaseMode && !demo) {
     try {
-      const response = await fetch('/api/agent', { cache: 'no-store' });
+      const [response, historyResponse] = await Promise.all([
+        fetch('/api/agent', { cache: 'no-store' }), fetch('/api/agent/runs?limit=8', { cache: 'no-store' })]);
       const config = response.ok && await response.json();
+      const history = historyResponse.ok ? await historyResponse.json() : { runs: [] };
       if (!area.isConnected || !area.contains(form)) return;
       area.querySelector('#model-status').textContent = `Python Agent V${config?.version ?? '4.1'} · 本地工具编排 · ${config?.configured ? '已配置模型（后续版本接入编排）' : '当前不需要 API Key'}`;
+      const historyBox = area.querySelector('#agent-history [data-runs]');
+      historyBox.innerHTML = history.runs?.length ? history.runs.map(run => `<button type="button" class="review-item" data-history-run="${escapeHTML(run.run_id)}">
+        <small>${escapeHTML(run.stage)} · ${escapeHTML(run.verdict || '待判断')} · ${escapeHTML(new Date(run.updated_at).toLocaleString('zh-CN'))}</small>
+        <strong>${escapeHTML(run.jd_excerpt || run.goal || run.run_id)}</strong>
+        <small>证据 ${run.evidence_count} · 缺口 ${run.gap_count} · 补丁 ${run.patch_count} · 工具 ${run.tool_count}</small></button>`).join('') : '<p class="m">暂无历史任务。</p>';
+      historyBox.querySelectorAll('[data-history-run]').forEach(button => {
+        button.onclick = async () => {
+          const detailBox = area.querySelector('#agent-history [data-run-detail]');
+          detailBox.innerHTML = '<p class="m">正在读取执行轨迹…</p>';
+          try {
+            const detailResponse = await fetch('/api/agent/run?run_id=' + encodeURIComponent(button.dataset.historyRun), { cache: 'no-store' });
+            if (!detailResponse.ok) throw new Error('history');
+            const detail = await detailResponse.json();
+            detailBox.innerHTML = `<p><b>${escapeHTML(VERDICTS[detail.verdict] || detail.stage)}</b> · ${escapeHTML(detail.summary)}</p>
+              <ol>${detail.tool_trace.map(item => `<li>${escapeHTML(item.summary || item.tool)} <small>${escapeHTML(item.tool)} · ${item.duration_ms}ms</small></li>`).join('')}</ol>`;
+          } catch { detailBox.innerHTML = '<p class="m">暂时无法读取该任务。</p>'; }
+        };
+      });
     } catch {}
   }
 }
@@ -1921,7 +1942,7 @@ async function runPreparation(area, result, task) {
     }
     if (state !== workspace || !area.isConnected || !samePreparation(task, result)) return;
     const { question, requirement, packet, ...base } = task;
-    const next = { ...base, mode: databaseMode && !demo ? 'agent_v4_3' : 'local',
+    const next = { ...base, mode: databaseMode && !demo ? 'agent_v4_5' : 'local',
       run_id: outcome.run_id ?? task.run_id, tool_trace: outcome.tool_trace ?? task.tool_trace };
     state.preparation = outcome.question ? { ...next, question: outcome.question, requirement: outcome.requirement,
       requirement_id: outcome.requirement_id } : { ...next, askedRequirement: task.requirement, packet: outcome };

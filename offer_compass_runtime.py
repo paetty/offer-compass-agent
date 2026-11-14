@@ -211,6 +211,26 @@ class AgentRuntime:
             raise KeyError(run_id)
         return self.public(state)
 
+    def list_runs(self, limit=20):
+        limit = max(1, min(int(limit), 50))
+        with closing(sqlite3.connect(str(self.db_path))) as db:
+            rows = db.execute("""SELECT run_id, stage, status, revision, state_json, created_at, updated_at
+                               FROM agent_runs ORDER BY updated_at DESC LIMIT ?""", (limit,)).fetchall()
+        items = []
+        for run_id, stage, status, revision, raw, created_at, updated_at in rows:
+            state = json.loads(raw)
+            assessment = state.get("assessment", {})
+            items.append({"run_id": run_id, "stage": stage, "status": status, "revision": revision,
+                          "goal": str(state.get("goal", ""))[:120],
+                          "jd_excerpt": str(state.get("jd", "")).replace("\n", " ")[:100],
+                          "verdict": assessment.get("verdict"),
+                          "evidence_count": sum(bool(item.get("evidence_id")) for item in assessment.get("requirements", [])),
+                          "gap_count": len(assessment.get("gaps", [])),
+                          "patch_count": len(state.get("patches", [])),
+                          "tool_count": len(state.get("tool_trace", [])),
+                          "created_at": created_at, "updated_at": updated_at})
+        return {"agent_version": "4.5", "runs": items}
+
     @staticmethod
     def public(state):
         assessment = state.get("assessment", {})
@@ -231,7 +251,7 @@ class AgentRuntime:
         question = state.get("question")
         next_actions = {"clarification_required": "wait_for_user", "ready_for_review": "review_resume_patches",
                         "verification_failed": "inspect_verification_failure", "fit_assessed": "review_fit_assessment"}
-        return {"run_id": state["run_id"], "agent_version": "4.3",
+        return {"run_id": state["run_id"], "agent_version": "4.5",
                 "stage": state["stage"], "status": state["status"],
                 "revision": state["revision"], "verdict": verdict, "summary": summary,
                 "evidence": evidence[:10], "gaps": gaps[:10],
@@ -243,6 +263,7 @@ class AgentRuntime:
                                       "reasons": item.get("verification_reasons", [])}
                                      for item in state.get("rejected_patches", [])],
                 "clarification": state.get("clarification"),
+                "created_at": state.get("created_at"), "updated_at": state.get("updated_at"),
                 "next_action": next_actions.get(state["stage"], "review_fit_assessment"),
                 "tool_trace": state.get("tool_trace", [])}
 
