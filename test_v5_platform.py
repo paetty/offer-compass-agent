@@ -1,12 +1,14 @@
 import json
+import os
 import sqlite3
 import tempfile
 import unittest
 from contextlib import closing
 from pathlib import Path
+from unittest.mock import patch
 
 import offer_compass_runtime
-from offer_compass_v5 import applications, browser, jobs, scoring, store
+from offer_compass_v5 import applications, browser, jobs, model_provider, scoring, store
 from offer_compass_v5.orchestrator import ApplicationGraph
 from offer_compass_v5.schemas import DiscoveryRequest
 from offer_compass_v5.security import assess_page_text, redact
@@ -44,6 +46,34 @@ class V5PlatformTests(unittest.TestCase):
         self.assertEqual(first["discovered_count"], 1)
         self.assertEqual(first["job_ids"], second["job_ids"])
         self.assertEqual(len(jobs.list_jobs(self.db)["jobs"]), 1)
+
+    def test_source_detection_and_bytedance_normalization(self):
+        self.assertEqual(jobs.detect_source("example"), "greenhouse")
+        self.assertEqual(jobs.detect_source("https://jobs.bytedance.com/campus/"), "bytedance")
+        request = DiscoveryRequest.from_dict({"source_type": "bytedance",
+            "source": "https://jobs.bytedance.com/campus/", "company": "字节跳动", "industry": "互联网",
+            "preferences": {"roles": ["产品"], "cities": ["北京"]}})
+        payload = {"code": 0, "data": {"job_post_list": [{"id": "123", "title": "AI 产品经理",
+            "description": "负责 AI 产品需求分析", "requirement": "具备数据分析能力",
+            "city_list": [{"name": "北京"}]}]}}
+        parsed = jobs.parse_bytedance_jobs(payload, request)
+        self.assertEqual(len(parsed), 1)
+        self.assertEqual(parsed[0]["city"], "北京")
+        self.assertIn("岗位要求", parsed[0]["jd"])
+        self.assertEqual(parsed[0]["official_url"],
+                         "https://jobs.bytedance.com/campus/position/123/detail")
+
+    def test_model_provider_accepts_only_known_secure_endpoints(self):
+        with patch.dict(os.environ, {"OFFER_COMPASS_MODEL_PROVIDER": "aliyun",
+                    "OFFER_COMPASS_MODEL_BASE_URL": "https://workspace.cn-beijing.maas.aliyuncs.com/compatible-mode/v1",
+                    "OFFER_COMPASS_MODEL": "qwen3.8-flash", "DASHSCOPE_API_KEY": "test-key"}, clear=True):
+            config = model_provider.settings()
+            self.assertTrue(config["configured"])
+            self.assertEqual(config["provider"], "aliyun")
+        with patch.dict(os.environ, {"OFFER_COMPASS_MODEL_PROVIDER": "aliyun",
+                    "OFFER_COMPASS_MODEL_BASE_URL": "https://evil.example.com/v1",
+                    "DASHSCOPE_API_KEY": "test-key"}, clear=True):
+            self.assertFalse(model_provider.settings()["configured"])
 
     def test_graph_creates_evidence_bound_application_package(self):
         found = jobs.discover(self.db, self.discovery_body(), self.fake_fetcher)

@@ -1,13 +1,12 @@
 """V5 service facade used by the compatibility HTTP server."""
 
-import os
-
 from . import VERSION
 from .applications import list_packages, save_package
 from .browser import plan as browser_plan
 from .jobs import discover, list_jobs
 from .orchestrator import ApplicationGraph
 from .scoring import deep_score, local_screen
+from .model_provider import public_settings, test_connection
 from .store import rows
 
 
@@ -21,8 +20,7 @@ def capabilities():
                          "security_evals"],
         "boundaries": {"final_submit": "user_only", "captcha": "user_only", "password": "never_stored",
                        "page_text": "untrusted_evidence", "model_scoring": "explicit_consent_only"},
-        "model_scoring": {"configured": bool(os.environ.get("OPENAI_API_KEY", "").strip()),
-                          "default_model": os.environ.get("OFFER_COMPASS_MODEL", "gpt-5.4-mini")},
+        "model_scoring": public_settings(),
     }
 
 
@@ -33,4 +31,5 @@ def list_tasks(db_path, limit=30):
 
 
 __all__ = ["capabilities", "discover", "list_jobs", "save_package", "list_packages",
-           "browser_plan", "ApplicationGraph", "list_tasks", "local_screen", "deep_score"]
+           "browser_plan", "ApplicationGraph", "list_tasks", "local_screen", "deep_score",
+           "test_connection"]

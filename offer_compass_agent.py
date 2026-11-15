@@ -1,12 +1,12 @@
 """A bounded, read-only tool loop for preparing an application."""
 
 import json
-import os
-from urllib.request import Request, urlopen
+
+from offer_compass_v5 import model_provider
 
 
 def configured():
-    return bool(os.environ.get("OPENAI_API_KEY", "").strip())
+    return model_provider.settings()["configured"]
 
 
 def tool(name, description, fields):
@@ -48,17 +48,12 @@ def model_step(messages, can_ask, searched):
     allowed = [spec for spec in TOOLS if (can_ask or spec["name"] != "ask_candidate")
                and (searched or spec["name"] == "find_evidence")]
     payload = {
-        "model": os.environ.get("OFFER_COMPASS_MODEL", "gpt-5.4-mini"),
+        "model": model_provider.settings()["model"],
         "instructions": INSTRUCTIONS, "input": messages, "tools": allowed,
         "tool_choice": "required", "parallel_tool_calls": False, "store": False,
         "include": ["reasoning.encrypted_content"], "max_output_tokens": 1800,
     }
-    request = Request("https://api.openai.com/v1/responses",
-                      data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
-                      headers={"Authorization": "Bearer " + os.environ["OPENAI_API_KEY"].strip(),
-                               "Content-Type": "application/json"}, method="POST")
-    with urlopen(request, timeout=18) as response:
-        return json.load(response)["output"]
+    return model_provider.responses(payload, timeout=18)["output"]
 
 
 def prepare(body, step=model_step):

@@ -62,8 +62,8 @@ class DiscoveryRequest:
     def from_dict(cls, value: Any) -> "DiscoveryRequest":
         if not isinstance(value, dict):
             raise ValidationError("invalid_request")
-        source_type = clean_text(value.get("source_type", "greenhouse"), 30, True).lower()
-        if source_type != "greenhouse":
+        source_type = clean_text(value.get("source_type", "auto"), 30, True).lower()
+        if source_type not in {"auto", "greenhouse", "bytedance"}:
             raise ValidationError("unsupported_source")
         return cls(
             source_type=source_type,

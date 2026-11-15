@@ -1151,9 +1151,9 @@ async function renderAgentWorkbench() {
       <div class="safety-boundary"><strong>人工确认边界</strong><br>Agent 不保存密码，不绕过验证码，也不会替你点击最终提交。</div>
     </section>
     <section class="card"><h3>1 · 连接公开岗位来源</h3>
-      <p class="m">当前 MVP 支持 Greenhouse 企业公开招聘页。岗位将由后端读取、去重并保存，不再只存在当前浏览器内存。</p>
+      <p class="m">支持 Greenhouse 企业招聘页和字节跳动校招页。系统会自动识别来源，由后端读取、去重并保存。</p>
       <form id="v5-source-form"><div class="fields">
-        <label>招聘页链接或 ID<input name="source" required placeholder="例如 openai 或 Greenhouse 链接"></label>
+        <label>招聘页链接或 ID<input name="source" required placeholder="Greenhouse ID，或 https://jobs.bytedance.com/campus/"></label>
         <label>公司名称<input name="company" required></label>
         <label>行业<input name="industry" placeholder="例如 人工智能"></label>
       </div><button class="pri">发现并保存岗位</button><p id="v5-source-status" class="m" role="status"></p></form>
@@ -1166,6 +1166,7 @@ async function renderAgentWorkbench() {
         <label class="wide"><input id="v5-model-consent" type="checkbox"> 我确认深度评分会使用我配置的模型 API 额度；不勾选不会调用模型。</label>
       </div>
       <div class="actions"><button id="v5-local-screen" type="button">运行免费本地初筛</button><button id="v5-deep-score" class="pri" type="button">深度评分入围岗位</button></div>
+      <div class="actions"><button id="v5-model-test" type="button">测试模型连接</button><span id="v5-model-state" class="m"></span></div>
       <div id="v5-score-status" class="workbench-result m" role="status">尚未运行评分。</div>
     </section>
     <section class="card"><div class="hd"><h3>3 · 岗位推荐队列</h3><button id="v5-refresh-jobs" type="button">刷新</button></div>
@@ -1200,9 +1201,13 @@ async function renderAgentWorkbench() {
       if (!live()) return;
       $('#v5-capabilities').innerHTML = `<div><strong>${jobsData.jobs.length}</strong>岗位</div><div><strong>${applicationsData.applications.length}</strong>申请包</div><div><strong>${tasksData.tasks.length}</strong>Agent 任务</div>`;
       const scoreStatus = $('#v5-score-status');
-      if (scoreStatus && scoreStatus.textContent === '尚未运行评分。') scoreStatus.textContent = caps.model_scoring?.configured
-        ? `模型已配置：${caps.model_scoring.default_model}。先运行免费初筛，再按需进行深度评分。`
-        : '免费初筛可直接使用；深度评分尚未配置模型。请用“带模型密钥启动”方式重新启动服务。';
+      const modelInfo = caps.model_scoring || {};
+      $('#v5-model-state').textContent = modelInfo.configured
+        ? `已连接 ${modelInfo.provider === 'aliyun' ? '阿里云百炼' : 'OpenAI'} · ${modelInfo.model}`
+        : `未连接模型 · 当前供应商 ${modelInfo.provider === 'aliyun' ? '阿里云百炼' : 'OpenAI'}`;
+      if (scoreStatus && scoreStatus.textContent === '尚未运行评分。') scoreStatus.textContent = modelInfo.configured
+        ? `模型已配置：${modelInfo.model}。先运行免费初筛，再按需进行深度评分。`
+        : '免费初筛可直接使用；深度评分尚未配置模型。OpenAI 使用带密钥启动；阿里云可双击“启动 Offer Compass - 阿里云模型”。';
       $('#v5-jobs').innerHTML = jobsData.jobs.length ? jobsData.jobs.map(job => `<article class="job-card">
         <div class="hd"><strong>${escapeHTML(job.role)}</strong><span class="m"><i class="status-dot"></i>${escapeHTML(job.status)}</span></div>
         <p class="m">${escapeHTML([job.company, job.city, job.industry].filter(Boolean).join(' · '))}</p>
@@ -1230,6 +1235,17 @@ async function renderAgentWorkbench() {
     }
   }
   $('#v5-refresh-jobs').onclick = refresh;
+  $('#v5-model-test').onclick = async () => {
+    const status = $('#v5-score-status'), button = $('#v5-model-test');
+    if (!$('#v5-model-consent').checked) { status.textContent = '测试连接也会产生少量模型用量，请先勾选额度确认。'; return; }
+    status.textContent = '正在发送最小测试请求…'; button.disabled = true;
+    try {
+      const result = await v5Request('/api/v5/model/test', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({allow_model:true}) });
+      status.textContent = `连接成功：${result.provider === 'aliyun' ? '阿里云百炼' : 'OpenAI'} · ${result.model}；本次测试使用 ${result.usage.total_tokens} Token。`;
+      await refresh();
+    } catch (error) { status.textContent = String(error.message).includes('model_not_configured') ? '模型尚未正确配置。阿里云请检查通用 API Key、Workspace Base URL 和模型 ID。' : '模型连接测试失败，请检查额度、模型权限和 Base URL。'; }
+    finally { button.disabled = false; }
+  };
   $('#v5-local-screen').onclick = async () => {
     const status = $('#v5-score-status'), button = $('#v5-local-screen');
     if (!String(state.profile.resumeText || '').trim()) { status.textContent = '请先在“档案”中导入或粘贴简历。'; return; }
@@ -1254,7 +1270,7 @@ async function renderAgentWorkbench() {
       await refresh();
     } catch (error) {
       status.textContent = String(error.message).includes('model_not_configured')
-        ? '尚未配置模型 API。请关闭服务后，用“python offer_compass_server.py --ask-model-key --open”启动。'
+        ? '尚未配置模型 API。OpenAI 可用 --ask-model-key 启动；阿里云请双击“启动 Offer Compass - 阿里云模型.cmd”。'
         : '深度评分暂时失败；没有完成的模型调用不会写成评分结果。';
     } finally { button.disabled = false; }
   };
@@ -1265,13 +1281,19 @@ async function renderAgentWorkbench() {
     form.querySelector('button').disabled = true;
     try {
       const result = await v5Request('/api/v5/jobs/discover', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ source_type: 'greenhouse', source: data.get('source'), company: data.get('company'), industry: data.get('industry'), preferences: state.profile.preferences }) });
+        body: JSON.stringify({ source_type: 'auto', source: data.get('source'), company: data.get('company'), industry: data.get('industry'), preferences: state.profile.preferences }) });
       let screened = null;
       if (String(state.profile.resumeText || '').trim()) screened = await v5Request('/api/v5/jobs/screen', {
         method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(scoringPayload()) });
       status.textContent = `已保存 ${result.discovered_count} 个符合偏好的岗位。${screened ? ` 免费初筛已自动完成，当前入围 ${screened.shortlisted} 个。` : ' 导入简历后可运行免费初筛。'}`;
       await refresh();
-    } catch { status.textContent = '暂时无法读取该来源。请检查链接、网络和求职偏好后重试。'; }
+    } catch (error) {
+      const code = String(error.message);
+      status.textContent = code.includes('unsupported_source_url') ? '暂不支持这个招聘网站。目前支持 Greenhouse 和字节跳动校招。' :
+        code.includes('source_must_use_https') ? '招聘来源必须使用 HTTPS 链接。' :
+        code.includes('invalid_bytedance_response') ? '字节招聘接口返回格式发生变化，暂未保存任何岗位。' :
+        '已识别来源，但暂时无法读取。请检查链接、网络和求职偏好后重试。';
+    }
     finally { form.querySelector('button').disabled = false; }
   };
   $('#v5-fill-form').onsubmit = async event => {

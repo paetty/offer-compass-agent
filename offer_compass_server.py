@@ -190,6 +190,10 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
                     result = v5_api.local_screen(self.server.db_path, body)
                 elif self.path == "/api/v5/jobs/deep-score":
                     result = v5_api.deep_score(self.server.db_path, body)
+                elif self.path == "/api/v5/model/test":
+                    if body.get("allow_model") is not True:
+                        raise ValidationError("model_consent_required")
+                    result = v5_api.test_connection()
                 elif self.path == "/api/v5/agent/run":
                     result = v5_api.ApplicationGraph(self.server.db_path).run(body)
                 elif self.path == "/api/v5/applications":
@@ -199,7 +203,9 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
                 else:
                     self.send_error(404)
                     return
-            except (ValidationError, ValueError, RecursionError):
+            except ValidationError as error:
+                self.send_json(400, {"error": str(error) or "invalid_v5_input"})
+            except (ValueError, RecursionError):
                 self.send_json(400, {"error": "invalid_v5_input"})
             except KeyError:
                 self.send_json(404, {"error": "v5_record_not_found"})
@@ -333,8 +339,17 @@ def main():
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--db", type=Path, default=ROOT / "data" / "offer-compass.sqlite3")
     parser.add_argument("--open", action="store_true", help="Open the workspace in the default browser")
-    parser.add_argument("--ask-model-key", action="store_true", help="Read the OpenAI API key for this session")
+    parser.add_argument("--ask-model-key", action="store_true", help="Read the selected provider API key for this session")
+    parser.add_argument("--model-provider", choices=("openai", "aliyun"), help="OpenAI-compatible provider")
+    parser.add_argument("--model-base-url", help="Validated provider API base URL; never includes the key")
+    parser.add_argument("--model-name", help="Provider model ID")
     args = parser.parse_args()
+    if args.model_provider:
+        os.environ["OFFER_COMPASS_MODEL_PROVIDER"] = args.model_provider
+    if args.model_base_url:
+        os.environ["OFFER_COMPASS_MODEL_BASE_URL"] = args.model_base_url
+    if args.model_name:
+        os.environ["OFFER_COMPASS_MODEL"] = args.model_name
     url = "http://127.0.0.1:{}/".format(args.port)
     try:
         server = WorkspaceServer(("127.0.0.1", args.port), WorkspaceHandler)
@@ -351,9 +366,15 @@ def main():
         raise SystemExit("Could not start Offer Compass on {}. The port may be in use.".format(url))
     with server:
         if args.ask_model_key:
-            key = getpass("OpenAI API key (Enter to use local mode): ").strip()
+            provider = os.environ.get("OFFER_COMPASS_MODEL_PROVIDER", "openai").strip().lower()
+            if provider == "aliyun" and not os.environ.get("OFFER_COMPASS_MODEL_BASE_URL", "").strip():
+                base = input("Alibaba Model Studio Base URL (with WorkspaceId): ").strip()
+                if base:
+                    os.environ["OFFER_COMPASS_MODEL_BASE_URL"] = base
+            key = getpass("{} API key (Enter to use local mode): ".format(
+                "Alibaba Model Studio" if provider == "aliyun" else "OpenAI")).strip()
             if key:
-                os.environ["OPENAI_API_KEY"] = key
+                os.environ["DASHSCOPE_API_KEY" if provider == "aliyun" else "OPENAI_API_KEY"] = key
         initialize(args.db)
         server.db_path = args.db
         url = "http://127.0.0.1:{}/".format(server.server_port)

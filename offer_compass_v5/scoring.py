@@ -2,12 +2,10 @@
 
 import hashlib
 import json
-import os
 import re
 import sqlite3
 import uuid
 from contextlib import closing
-from urllib.request import Request, urlopen
 
 from offer_compass_tools import (assess_job_fit, get_candidate_profile,
                                  parse_job_description, retrieve_resume_evidence)
@@ -15,10 +13,10 @@ from offer_compass_tools import (assess_job_fit, get_candidate_profile,
 from .schemas import JobPreferences, ValidationError, clean_text, string_list
 from .security import assess_page_text, redact
 from .store import now, rows
+from . import model_provider
 
 
 PROMPT_VERSION = "job-score-v1"
-DEFAULT_MODEL = "gpt-5.4-mini"
 
 
 def _profile(body):
@@ -166,9 +164,6 @@ def _response_text(response):
 
 
 def model_score(payload, model, max_output_tokens=800):
-    key = os.environ.get("OPENAI_API_KEY", "").strip()
-    if not key:
-        raise RuntimeError("model_not_configured")
     request_body = {
         "model": model,
         "instructions": ("你是证据约束型岗位匹配评分器。只能根据输入中的 JD、简历证据行和本地初筛结果评分。"
@@ -179,12 +174,7 @@ def model_score(payload, model, max_output_tokens=800):
         "max_output_tokens": max_output_tokens,
         "store": False,
     }
-    request = Request("https://api.openai.com/v1/responses",
-                      data=json.dumps(request_body, ensure_ascii=False).encode("utf-8"),
-                      headers={"Authorization": "Bearer " + key, "Content-Type": "application/json"},
-                      method="POST")
-    with urlopen(request, timeout=30) as response:
-        result = json.load(response)
+    result = model_provider.responses(request_body, timeout=30)
     return json.loads(_response_text(result)), result.get("usage") or {}
 
 
@@ -216,7 +206,9 @@ def deep_score(db_path, body, scorer=None):
     lines, levels, preferences, profile_hash = _profile(body)
     max_jobs = _bounded_int(body.get("max_jobs"), 5, 1, 20)
     max_total_tokens = _bounded_int(body.get("max_total_tokens"), 12000, 1500, 50000)
-    model = clean_text(body.get("model") or os.environ.get("OFFER_COMPASS_MODEL", DEFAULT_MODEL), 120, True)
+    provider_config = model_provider.settings()
+    model = clean_text(body.get("model") or provider_config["model"], 120, True)
+    model_identity = provider_config["provider"] + ":" + model
     local = local_screen(db_path, {"lines": lines, "levels": levels, "preferences": preferences.as_dict()})
     candidates = rows(db_path, """SELECT j.*, s.local_score, s.disposition, s.matched_json,
         s.gaps_json, s.reasons_json FROM jobs j JOIN job_local_scores s ON s.job_id=j.job_id
@@ -229,7 +221,7 @@ def deep_score(db_path, body, scorer=None):
     scorer = scorer or model_score
     for job in candidates:
         cache_key = hashlib.sha256((job["job_id"] + ":" + job["content_hash"] + ":" +
-                                    profile_hash + ":" + PROMPT_VERSION + ":" + model).encode()).hexdigest()
+                                    profile_hash + ":" + PROMPT_VERSION + ":" + model_identity).encode()).hexdigest()
         cached = rows(db_path, "SELECT * FROM job_deep_scores WHERE cache_key=?", (cache_key,))
         if cached:
             item = cached[0]
@@ -268,7 +260,7 @@ def deep_score(db_path, body, scorer=None):
         used_output += output_tokens
         with closing(sqlite3.connect(str(db_path))) as db, db:
             db.execute("""INSERT INTO job_deep_scores VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", (
-                cache_key, job["job_id"], profile_hash, job["content_hash"], PROMPT_VERSION, model,
+                cache_key, job["job_id"], profile_hash, job["content_hash"], PROMPT_VERSION, model_identity,
                 result["score"], result["recommendation"], result["summary"],
                 json.dumps(result["strengths"], ensure_ascii=False), json.dumps(result["gaps"], ensure_ascii=False),
                 json.dumps(result["evidence_lines"], ensure_ascii=False), input_tokens, output_tokens, stamp))
@@ -276,10 +268,10 @@ def deep_score(db_path, body, scorer=None):
                        **result, "cached": False})
     with closing(sqlite3.connect(str(db_path))) as db, db:
         db.execute("""INSERT INTO job_scoring_runs VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", (
-            run_id, profile_hash, model, max_jobs, max_total_tokens, len(candidates), called,
+            run_id, profile_hash, model_identity, max_jobs, max_total_tokens, len(candidates), called,
             cache_hits, used_input, used_output, stamp))
     output.sort(key=lambda item: (-item["score"], item["job_id"]))
-    return {"stage": "deep_score", "run_id": run_id, "model": model,
+    return {"stage": "deep_score", "run_id": run_id, "provider": provider_config["provider"], "model": model,
             "candidate_count": len(candidates), "model_calls": called, "cache_hits": cache_hits,
             "budget_skipped": budget_skipped,
             "usage": {"input_tokens": used_input, "output_tokens": used_output,

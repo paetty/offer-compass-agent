@@ -6,6 +6,7 @@ import json
 import re
 import sqlite3
 from contextlib import closing
+from dataclasses import replace
 from html.parser import HTMLParser
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
@@ -57,6 +58,27 @@ def greenhouse_token(value):
     raise ValidationError("invalid_greenhouse_source")
 
 
+def detect_source(value):
+    value = str(value or "").strip()
+    if re.fullmatch(r"[A-Za-z0-9_-]{1,80}", value):
+        return "greenhouse"
+    parsed = urlparse(value)
+    host = (parsed.hostname or "").lower()
+    if parsed.scheme != "https":
+        raise ValidationError("source_must_use_https")
+    if host in {"boards.greenhouse.io", "job-boards.greenhouse.io"}:
+        return "greenhouse"
+    if host == "jobs.bytedance.com" and (parsed.path == "/campus" or parsed.path.startswith("/campus/")):
+        return "bytedance"
+    raise ValidationError("unsupported_source_url")
+
+
+def bytedance_source(value):
+    if detect_source(value) != "bytedance":
+        raise ValidationError("invalid_bytedance_source")
+    return "bytedance-campus"
+
+
 def _matches(value, terms):
     value = value.casefold()
     return not terms or any(term.casefold().rstrip("市") in value for term in terms)
@@ -97,6 +119,82 @@ def discover_greenhouse(request, timeout=12):
     return token, parse_greenhouse_jobs(payload, request)
 
 
+def _byte_city(item):
+    values = []
+    for candidate in ((item.get("city_info") or {}), *((item.get("city_list") or [])),
+                      *((item.get("city_info_list") or []))):
+        if not isinstance(candidate, dict):
+            continue
+        nested = candidate.get("city_info") if isinstance(candidate.get("city_info"), dict) else {}
+        name = candidate.get("name") or candidate.get("cn_name") or nested.get("name") or nested.get("cn_name")
+        if name and str(name).strip() not in values:
+            values.append(str(name).strip())
+    return " / ".join(values)[:200]
+
+
+def parse_bytedance_jobs(payload, request):
+    data = payload.get("data") if isinstance(payload, dict) else None
+    posts = data.get("job_post_list") if isinstance(data, dict) else None
+    if payload.get("code") != 0 or not isinstance(posts, list):
+        raise ValidationError("invalid_bytedance_response")
+    result = []
+    for item in posts:
+        if not isinstance(item, dict):
+            continue
+        external_id = str(item.get("id") or "").strip()
+        role = str(item.get("title") or "").strip()[:300]
+        city = _byte_city(item)
+        if not external_id or not role:
+            continue
+        if not (_matches(role, request.preferences.roles)
+                and _matches(request.industry, request.preferences.industries)
+                and _matches(city, request.preferences.cities)):
+            continue
+        description = html_text(item.get("description"))
+        requirement = html_text(item.get("requirement"))
+        jd = "\n".join(part for part in
+                       (("岗位职责\n" + description) if description else "",
+                        ("岗位要求\n" + requirement) if requirement else "") if part)[:50000]
+        result.append({"external_id": external_id, "company": request.company or "字节跳动",
+                       "role": role, "industry": request.industry or "互联网", "city": city,
+                       "jd": jd, "official_url":
+                       "https://jobs.bytedance.com/campus/position/{}/detail".format(external_id)})
+    return result
+
+
+def discover_bytedance(request, timeout=15):
+    bytedance_source(request.source)
+    url = "https://jobs.bytedance.com/api/v1/search/job/posts"
+    headers = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36", "Accept": "application/json, text/plain, */*",
+               "Content-Type": "application/json", "Origin": "https://jobs.bytedance.com",
+               "Referer": "https://jobs.bytedance.com/campus/position", "portal-channel": "campus",
+               "portal-platform": "pc", "website-path": "campus"}
+    keywords = request.preferences.roles[:5] or [""]
+    found = {}
+    for keyword in keywords:
+        for page in range(5):
+            body = {"keyword": keyword, "limit": 50, "offset": page * 50,
+                    "portal_type": 3, "portal_entrance": 1, "language": "zh",
+                    "recruitment_id_list": ["201"], "job_category_id_list": [],
+                    "location_code_list": [], "subject_id_list": [], "tag_id_list": [],
+                    "storefront_id_list": [], "job_function_id_list": []}
+            http_request = Request(url, data=json.dumps(body, ensure_ascii=False).encode("utf-8"),
+                                   headers=headers, method="POST")
+            with urlopen(http_request, timeout=timeout) as response:
+                if response.status != 200:
+                    raise RuntimeError("source_http_{}".format(response.status))
+                payload = json.loads(response.read(8 * 1024 * 1024).decode("utf-8"))
+            parsed = parse_bytedance_jobs(payload, request)
+            for job in parsed:
+                found[job["external_id"]] = job
+            raw_posts = ((payload.get("data") or {}).get("job_post_list") or [])
+            if len(raw_posts) < 50:
+                break
+            if len(found) >= 1000:
+                break
+    return "bytedance-campus", list(found.values())
+
+
 def persist_discovery(db_path, request, token, discovered):
     source_id = "source_" + hashlib.sha256((request.source_type + ":" + token).encode()).hexdigest()[:20]
     stamp = now()
@@ -124,8 +222,13 @@ def persist_discovery(db_path, request, token, discovered):
 
 def discover(db_path, body, fetcher=None):
     request = DiscoveryRequest.from_dict(body)
-    token, jobs = (fetcher or discover_greenhouse)(request)
-    return persist_discovery(db_path, request, token, jobs)
+    resolved = request.source_type if request.source_type != "auto" else detect_source(request.source)
+    request = replace(request, source_type=resolved)
+    discoverer = fetcher or {"greenhouse": discover_greenhouse, "bytedance": discover_bytedance}[resolved]
+    token, jobs = discoverer(request)
+    result = persist_discovery(db_path, request, token, jobs)
+    result["source_type"] = resolved
+    return result
 
 
 def list_jobs(db_path, limit=50):

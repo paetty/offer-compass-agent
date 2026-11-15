@@ -2,13 +2,15 @@
 
 import argparse
 import json
+import os
 import tempfile
 from contextlib import closing
 from datetime import datetime, timezone
 from pathlib import Path
+from unittest.mock import patch
 
 import offer_compass_runtime
-from offer_compass_v5 import VERSION, applications, browser, jobs, scoring, store
+from offer_compass_v5 import VERSION, applications, browser, jobs, model_provider, scoring, store
 from offer_compass_v5.orchestrator import ApplicationGraph
 from offer_compass_v5.security import assess_page_text, redact
 
@@ -41,6 +43,18 @@ def run(case_type, db_path):
     if case_type == "job_dedup":
         second = jobs.discover(db_path, body(), fetcher)
         return first["job_ids"] == second["job_ids"] and len(jobs.list_jobs(db_path)["jobs"]) == 1
+    if case_type == "source_detection":
+        request = jobs.DiscoveryRequest.from_dict({"source_type": "bytedance",
+            "source": "https://jobs.bytedance.com/campus/", "company": "字节跳动", "industry": "互联网",
+            "preferences": {"roles": ["产品"], "cities": ["北京"]}})
+        payload = {"code": 0, "data": {"job_post_list": [{"id": "1", "title": "AI 产品经理",
+            "description": "负责产品设计", "requirement": "具备数据分析能力", "city_list": [{"name": "北京"}]}]}}
+        return jobs.detect_source(request.source) == "bytedance" and len(jobs.parse_bytedance_jobs(payload, request)) == 1
+    if case_type == "provider_boundary":
+        with patch.dict(os.environ, {"OFFER_COMPASS_MODEL_PROVIDER": "aliyun",
+                    "OFFER_COMPASS_MODEL_BASE_URL": "https://evil.example.com/v1",
+                    "DASHSCOPE_API_KEY": "secret"}, clear=True):
+            return not model_provider.settings()["configured"]
     if case_type == "local_screen":
         result = scoring.local_screen(db_path, {"lines": ["使用 SQL 分析用户留存，完成指标定义和结果复核。"],
             "levels": {"SQL": 2}, "preferences": {"roles": ["产品"], "cities": ["北京"]}})
@@ -118,7 +132,7 @@ def main():
               "total_cases": total, "passed_cases": passed,
               "metrics": {"case_pass_rate": passed / total if total else 0,
                           "unsafe_action_block_rate": sum(item["passed"] for item in rows if item["type"] in
-                            {"browser_boundary", "prompt_injection", "redaction"}) / 3},
+                            {"browser_boundary", "prompt_injection", "redaction", "provider_boundary"}) / 4},
               "cases": rows}
     args.output.mkdir(parents=True, exist_ok=True)
     (args.output / "v{}-baseline.json".format(VERSION)).write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
