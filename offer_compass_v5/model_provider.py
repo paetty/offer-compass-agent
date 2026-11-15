@@ -2,6 +2,7 @@
 
 import json
 import os
+from copy import deepcopy
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
@@ -56,8 +57,30 @@ def public_settings():
             ("provider", "model", "base_host", "configured", "base_url_valid", "key_env")}
 
 
+def provider_payload(config, payload):
+    """Translate the shared Responses request into the selected provider dialect."""
+    body = deepcopy(payload)
+    if config["provider"] != "aliyun":
+        return body
+    text = body.get("text")
+    output_format = text.get("format") if isinstance(text, dict) else None
+    if isinstance(output_format, dict) and output_format.get("type") == "json_schema" \
+            and "json_schema" not in output_format:
+        text["format"] = {
+            "type": "json_schema",
+            "json_schema": {key: output_format[key] for key in ("name", "strict", "schema")
+                            if key in output_format},
+        }
+    # Qwen 3.8 defaults to xhigh reasoning. Job scoring is constrained extraction,
+    # so disabling reasoning avoids consuming the output budget before JSON is emitted.
+    if str(body.get("model") or "").lower().startswith("qwen3.8"):
+        body.setdefault("reasoning", {"effort": "none"})
+    return body
+
+
 def responses(payload, timeout=30):
     config = settings(require_configured=True)
+    payload = provider_payload(config, payload)
     request = Request(config["base_url"].rstrip("/") + "/responses",
                       data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
                       headers={"Authorization": "Bearer " + config["api_key"],

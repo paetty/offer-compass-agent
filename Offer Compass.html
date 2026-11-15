@@ -1139,7 +1139,10 @@ function go(next, refresh = false) {
 
 async function v5Request(path, options) {
   const response = await fetch(path, { cache: 'no-store', ...options });
-  if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || 'request_failed');
+  if (!response.ok) {
+    const problem = await response.json().catch(() => ({}));
+    throw new Error([problem.error, problem.reason].filter(Boolean).join(' · ') || 'request_failed');
+  }
   return response.json();
 }
 
@@ -1271,7 +1274,7 @@ async function renderAgentWorkbench() {
     } catch (error) {
       status.textContent = String(error.message).includes('model_not_configured')
         ? '尚未配置模型 API。OpenAI 可用 --ask-model-key 启动；阿里云请双击“启动 Offer Compass - 阿里云模型.cmd”。'
-        : '深度评分暂时失败；没有完成的模型调用不会写成评分结果。';
+        : `深度评分暂时失败（${String(error.message || 'unknown').replace(/^.*?:\s*/, '')}）。没有完成的模型调用不会写成评分结果。`;
     } finally { button.disabled = false; }
   };
   $('#v5-source-form').onsubmit = async event => {

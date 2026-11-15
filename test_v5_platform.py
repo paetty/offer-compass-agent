@@ -75,6 +75,19 @@ class V5PlatformTests(unittest.TestCase):
                     "DASHSCOPE_API_KEY": "test-key"}, clear=True):
             self.assertFalse(model_provider.settings()["configured"])
 
+    def test_aliyun_responses_payload_is_adapted_without_mutating_shared_schema(self):
+        source = {"model": "qwen3.8-flash", "text": {"format": {
+            "type": "json_schema", "name": "score", "strict": True,
+            "schema": {"type": "object", "properties": {"score": {"type": "integer"}}},
+        }}}
+        config = {"provider": "aliyun"}
+        adapted = model_provider.provider_payload(config, source)
+        self.assertEqual(adapted["text"]["format"]["type"], "json_schema")
+        self.assertEqual(adapted["text"]["format"]["json_schema"]["name"], "score")
+        self.assertEqual(adapted["reasoning"], {"effort": "none"})
+        self.assertIn("name", source["text"]["format"])
+        self.assertNotIn("json_schema", source["text"]["format"])
+
     def test_graph_creates_evidence_bound_application_package(self):
         found = jobs.discover(self.db, self.discovery_body(), self.fake_fetcher)
         result = ApplicationGraph(self.db).run({

@@ -209,14 +209,16 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
                 self.send_json(400, {"error": "invalid_v5_input"})
             except KeyError:
                 self.send_json(404, {"error": "v5_record_not_found"})
-            except (URLError, TimeoutError, OSError):
+            except (URLError, TimeoutError, OSError) as error:
+                reason = getattr(error, "code", None)
                 self.send_json(502, {"error": "model_scoring_unavailable" if self.path.endswith("/deep-score")
-                                     else "job_source_unavailable"})
+                                     else "job_source_unavailable",
+                                     "reason": "provider_http_{}".format(reason) if reason else "provider_network_error"})
             except RuntimeError as error:
                 if str(error) == "model_not_configured":
                     self.send_json(503, {"error": "model_not_configured"})
                 else:
-                    self.send_json(502, {"error": "model_scoring_unavailable"})
+                    self.send_json(502, {"error": "model_scoring_unavailable", "reason": str(error)[:120]})
             except sqlite3.Error:
                 self.send_json(500, {"error": "v5_database_unavailable"})
             except Exception:
