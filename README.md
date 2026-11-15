@@ -1,10 +1,10 @@
 # Offer Compass
 
-Offer Compass 是一个“证据约束型”求职 Agent MVP：用户提供个人档案和岗位 JD 后，系统核对简历证据、识别能力缺口、评估匹配度，并生成可逐条审核的定制简历草稿。
+Offer Compass 是一个“证据约束型”求职 Agent：从公开来源发现岗位，核对简历证据，判断岗位是否值得投，追问会改变判断的关键信息，生成可逐条审核的定制简历，并在人类确认边界内准备投递。
 
-当前版本为 **Agent V4.5**：前端只负责交互，Python Agent Runtime 负责状态迁移，受约束工具负责档案读取、JD 解析、证据检索、匹配判断、关键追问、结构化改写和独立事实校验。每个 Run 和工具调用均保存到本地 SQLite，可恢复、可追溯，并有可重复的 Agent 评测基线。
+当前版本为 **Agent V5.5**。它在完整保留 V4.5 简历证据与审阅能力的基础上，新增可信岗位发现、可恢复 Application Graph、岗位级申请包、投递阶段历史、半自动表单填写计划和行动安全评测。
 
-## MVP 能力
+## Agent 能力
 
 - 本地 SQLite 档案、JD 分析和投递记录
 - 技能熟练度与经历证据分层
@@ -15,19 +15,41 @@ Offer Compass 是一个“证据约束型”求职 Agent MVP：用户提供个�
 - PDF 限制修改模式与版式风险防护
 - 持久化 Agent Run、状态机和工具调用轨迹
 - 历史 Run 列表、刷新恢复和轨迹详情
-- 12 个安全与任务成功评测用例
+- Greenhouse 公开岗位发现、偏好筛选、稳定身份和去重保存
+- 岗位 → 证据 Agent → 关键追问 → 已校验简历 → 申请包的持久化流程
+- 岗位级投递状态与阶段证据历史
+- 不接触密码、验证码和最终提交的安全填写计划
+- V4.5 证据回归与 V5.5 行动安全冻结评测
 
-## Agent V4.5 架构
+## Agent V5.5 架构
 
 ```text
-Offer Compass.html
-       ↓ POST /api/agent/run
-offer_compass_runtime.py
-       ↓ 受约束工具调用
-offer_compass_tools.py
-       ↓
-SQLite: agent_runs + agent_tool_calls
+公开岗位来源 → jobs.py → SQLite 岗位库
+                         ↓
+Offer Compass Agent 工作台 → ApplicationGraph
+                         ↓
+              V4.5 Evidence Agent Runtime
+                         ↓
+         关键追问 / 已校验简历补丁 / 申请包
+                         ↓
+           人工审阅 → 安全填写计划 → 用户提交
 ```
+
+V5 没有为了框架而强行引入 LangChain/LangGraph。流程以显式节点、持久化状态和确定性 Python 工具实现；这保留了 V4.5 的证据与事实校验边界，也方便未来替换编排框架。
+
+V5 模块位于 `offer_compass_v5/`：
+
+- `orchestrator.py`：可暂停、可恢复的申请流程图
+- `jobs.py`：可信来源岗位发现与去重
+- `applications.py`：岗位级申请包和阶段历史
+- `browser.py`：只生成映射、不执行提交的填写计划
+- `security.py`：提示注入拦截与敏感数据遮盖
+- `store.py`：有序数据库迁移
+- `schemas.py`：API 输入边界
+
+完整设计见 `Agent V5.0-V5.5 架构与边界.md`。
+
+## V4.5 兼容层
 
 当前工具：
 
@@ -44,7 +66,7 @@ SQLite: agent_runs + agent_tool_calls
 
 详细设计见 `Agent V4.3 安全改写与证据协议.md`。
 
-## V4.5 评测基线
+## 评测基线
 
 | 指标 | 基线 |
 |---|---:|
@@ -54,6 +76,8 @@ SQLite: agent_runs + agent_tool_calls
 | 工具调用成功率 | 100% |
 
 这是当前 12 个固定场景的回归基线，不代表对任意真实 JD 的泛化准确率。详细用例和失败信息见 `evals/`。
+
+V5.5 另有岗位去重、Graph 暂停、申请包、表单权限、网页提示注入和 PII 遮盖评测。两组评测都会在 CI 中执行。
 
 ## 本地启动
 
@@ -70,12 +94,15 @@ python offer_compass_server.py --port 8765 --open
 ## 测试
 
 ```powershell
-python -m unittest -v test_agent_runtime.py
+python -m unittest -v test_agent_runtime.py test_v5_platform.py
 python evaluate_agent.py
+python evaluate_v5.py
 node .offer-review-qa.cjs
 ```
 
 测试覆盖 Agent 状态恢复、工具轨迹、证据引用、安全改写、Word / PDF 预览、逐条审阅、文件导出和数据库恢复。
+
+岗位抓取目前只承诺 Greenhouse 公开招聘页 MVP；登录、验证码和最终投递不由 Agent 代替用户完成。
 
 ## Prompt 工程
 
@@ -83,6 +110,8 @@ node .offer-review-qa.cjs
 - `简历修改 Agent Prompt V3.md`：证据约束、改写边界与审核逻辑
 - `简历修改 Agent Prompt V4.3.md`：工具调用、证据分级、结构化补丁和独立校验协议
 - `Agent V4.5 运行历史与评测.md`：任务恢复、轨迹界面、评测指标与基线边界
+- `Agent V5.0-V5.5 架构与边界.md`：岗位发现、申请包、浏览器协助、安全与兼容策略
+- `求职申请 Agent Prompt V5.5.md`：跨搜岗、判断、改写、填写和人工审批的统一 Prompt 边界
 
 ## 隐私
 

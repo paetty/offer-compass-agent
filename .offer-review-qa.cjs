@@ -103,7 +103,7 @@ async function run(){
   await new Promise((resolve,reject)=>fixture.on('exit',code=>code===0?resolve():reject(Error('fixture'))));
   await wait(()=>fetch(url+'/api/health').then(r=>r.ok).catch(()=>false),'service');
   const health=await fetch(url+'/api/health').then(r=>r.json());
-  assert.equal(health.agent_version,'4.5');
+  assert.equal(health.agent_version,'5.5');
   const agentBody={jd:'岗位要求：\n1. 熟练 SQL 并能够进行数据分析\n2. 具备独立 A/B 测试经验',goal:'判断是否值得投递',
     lines:['项目经历','使用 SQL 分析用户留存，完成指标定义和结果复核。'],levels:{SQL:2}};
   const agentStart=await fetch(url+'/api/agent/run',{method:'POST',headers:{'Content-Type':'application/json','Origin':url},body:JSON.stringify(agentBody)}).then(r=>r.json());
@@ -122,6 +122,19 @@ async function run(){
   await cdp('Emulation.setDeviceMetricsOverride',{width:743,height:665,deviceScaleFactor:1,mobile:false});
   await cdp('Page.navigate',{url});
   await wait(()=>js("typeof ready!=='undefined' && ready && $('#resume-file')"),'app ready');
+  await js("go('o')");
+  await wait(()=>js("Boolean($('#v5-source-form')) && $('#v5-capabilities strong').textContent!=='—'"),'V5 Agent workbench');
+  await js(`(() => {
+    const form=$('#v5-fill-form');
+    form.elements.url.value='https://careers.example.com/apply';
+    form.elements.fields.value='姓名\\n邮箱\\n登录密码\\n提交申请';
+    form.elements.name.value='演示求职者';
+    form.elements.email.value='demo@example.com';
+    form.requestSubmit();
+  })()`);
+  await wait(()=>js("$('#v5-fill-result').textContent.includes('最终提交：仅用户本人操作')"),'safe fill plan');
+  await check("$('#v5-fill-result').textContent.includes('可填写 2 项') && $('#v5-fill-result').textContent.includes('需人工处理 2 项')",'V5 safe form boundaries');
+  await js("go('p')");
   await upload(readFileSync(join(temp,'source.docx')).toString('base64'),'source.docx');
   await wait(()=>js("$('#resume-style').textContent.includes('含嵌入图片') && $('#resume-style').textContent.includes('含分栏')"),'style detection');
   await js("go('j'); $('#jd').value='岗位：数据分析师\\n要求熟练 SQL 并具备数据分析经验\\n具备独立 A/B 测试经验'; $('#jd').dispatchEvent(new Event('input')); $('#analyze').click(); $('#show-preparation').click(); $('#prepare-form').requestSubmit()");

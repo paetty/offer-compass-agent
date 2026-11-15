@@ -1,0 +1,11 @@
+{
+  "manifest_version": 3,
+  "name": "Offer Compass 安全填写助手",
+  "version": "5.5.0",
+  "description": "仅在用户点击后填写当前投递页的可靠字段；不处理密码、验证码或最终提交。",
+  "permissions": ["activeTab", "scripting", "storage"],
+  "action": {
+    "default_title": "Offer Compass 安全填写助手",
+    "default_popup": "popup.html"
+  }
+}

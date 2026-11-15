@@ -1,0 +1,7 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Offer Compass</title><style>
+body{width:320px;margin:0;padding:16px;background:#111217;color:#f3f3f5;font:14px/1.5 system-ui,"PingFang SC",sans-serif}h1{font-size:17px;margin:0 0 4px}p{color:#a5a6af;margin:4px 0 12px}label{display:block;margin:8px 0}input{box-sizing:border-box;width:100%;padding:8px;border:1px solid #34353d;border-radius:8px;background:#1b1c22;color:#fff}button{width:100%;margin-top:12px;padding:10px;border:0;border-radius:9px;background:#8378ff;color:#fff;font-weight:700;cursor:pointer}.safe{padding:8px;border:1px solid #2d6f55;border-radius:8px;background:#13221b;color:#8be0b5}#status{white-space:pre-wrap;margin-top:10px;color:#d9d9df}</style></head>
+<body><h1>Offer Compass 安全填写助手</h1><p class="safe">只处理当前标签页。密码、验证码、证件、附件和最终提交一律跳过。</p>
+<form id="profile"><label>姓名<input name="name" autocomplete="name"></label><label>邮箱<input name="email" type="email" autocomplete="email"></label>
+<label>手机号<input name="phone" autocomplete="tel"></label><label>城市<input name="city"></label><label>学校<input name="school"></label><label>专业<input name="major"></label><label>学历<input name="degree"></label>
+<button>检查并填写当前页面</button></form><div id="status" role="status"></div><script src="popup.js"></script></body></html>

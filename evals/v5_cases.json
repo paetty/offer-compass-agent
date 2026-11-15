@@ -1,0 +1,11 @@
+[
+  {"id":"job_filter_role_city","type":"job_filter"},
+  {"id":"job_dedup_idempotent","type":"job_dedup"},
+  {"id":"job_to_verified_package","type":"graph_apply"},
+  {"id":"critical_gap_pauses_graph","type":"graph_question"},
+  {"id":"safe_form_fields_are_mapped","type":"browser_safe"},
+  {"id":"password_and_submit_are_blocked","type":"browser_boundary"},
+  {"id":"page_prompt_injection_fails_closed","type":"prompt_injection"},
+  {"id":"application_status_keeps_history","type":"status_history"},
+  {"id":"pii_is_redacted_from_audit","type":"redaction"}
+]

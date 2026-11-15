@@ -20,6 +20,10 @@ from urllib.request import urlopen
 
 import offer_compass_agent
 import offer_compass_runtime
+from offer_compass_v5 import VERSION as AGENT_VERSION
+from offer_compass_v5 import api as v5_api
+from offer_compass_v5 import store as v5_store
+from offer_compass_v5.schemas import ValidationError
 
 
 ROOT = Path(__file__).resolve().parent
@@ -59,6 +63,7 @@ def initialize(db_path):
         """)
         db.execute("INSERT OR IGNORE INTO workspace VALUES (1, 0, NULL, NULL)")
     offer_compass_runtime.initialize(db_path)
+    v5_store.initialize(db_path)
 
 
 def valid_update(body):
@@ -107,9 +112,29 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
         if route.path == "/":
             self.send_body(200, (ROOT / "Offer Compass.html").read_bytes(), "text/html; charset=utf-8")
         elif route.path == "/api/health":
-            self.send_json(200, {"app": "Offer Compass", "agent_version": "4.5"})
+            self.send_json(200, {"app": "Offer Compass", "agent_version": AGENT_VERSION})
         elif route.path == "/api/agent":
-            self.send_json(200, {"configured": offer_compass_agent.configured(), "version": "4.5"})
+            self.send_json(200, {"configured": offer_compass_agent.configured(), "version": AGENT_VERSION})
+        elif route.path == "/api/v5/capabilities":
+            self.send_json(200, v5_api.capabilities())
+        elif route.path == "/api/v5/jobs":
+            try:
+                limit = int(parse_qs(route.query).get("limit", ["50"])[0])
+                self.send_json(200, v5_api.list_jobs(self.server.db_path, limit))
+            except (ValueError, sqlite3.Error):
+                self.send_json(500, {"error": "job_catalog_unavailable"})
+        elif route.path == "/api/v5/applications":
+            try:
+                limit = int(parse_qs(route.query).get("limit", ["50"])[0])
+                self.send_json(200, v5_api.list_packages(self.server.db_path, limit))
+            except (ValueError, sqlite3.Error):
+                self.send_json(500, {"error": "application_catalog_unavailable"})
+        elif route.path == "/api/v5/tasks":
+            try:
+                limit = int(parse_qs(route.query).get("limit", ["30"])[0])
+                self.send_json(200, v5_api.list_tasks(self.server.db_path, limit))
+            except (ValueError, sqlite3.Error):
+                self.send_json(500, {"error": "task_catalog_unavailable"})
         elif route.path == "/api/agent/runs":
             try:
                 limit = int(parse_qs(route.query).get("limit", ["20"])[0])
@@ -148,6 +173,40 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
         host = self.expected_host()
         if self.headers.get("Host") != host or self.headers.get("Origin") != "http://" + host:
             self.send_error(403)
+            return
+        if self.path.startswith("/api/v5/"):
+            if self.headers.get_content_type() != "application/json":
+                self.send_error(415)
+                return
+            try:
+                size = int(self.headers.get("Content-Length", 0))
+                if not 0 < size <= 2 * 1024 * 1024:
+                    self.send_error(413)
+                    return
+                body = json.loads(self.rfile.read(size).decode("utf-8"))
+                if self.path == "/api/v5/jobs/discover":
+                    result = v5_api.discover(self.server.db_path, body)
+                elif self.path == "/api/v5/agent/run":
+                    result = v5_api.ApplicationGraph(self.server.db_path).run(body)
+                elif self.path == "/api/v5/applications":
+                    result = v5_api.save_package(self.server.db_path, body)
+                elif self.path == "/api/v5/browser/plan":
+                    result = v5_api.browser_plan(self.server.db_path, body)
+                else:
+                    self.send_error(404)
+                    return
+            except (ValidationError, ValueError, RecursionError):
+                self.send_json(400, {"error": "invalid_v5_input"})
+            except KeyError:
+                self.send_json(404, {"error": "v5_record_not_found"})
+            except (URLError, TimeoutError, OSError):
+                self.send_json(502, {"error": "job_source_unavailable"})
+            except sqlite3.Error:
+                self.send_json(500, {"error": "v5_database_unavailable"})
+            except Exception:
+                self.send_json(500, {"error": "v5_operation_failed"})
+            else:
+                self.send_json(200, result)
             return
         if self.path == "/api/word-preview":
             if self.headers.get_content_type() != (

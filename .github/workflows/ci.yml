@@ -1,0 +1,20 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Unit and compatibility tests
+        run: python -m unittest -v test_agent_runtime.py test_v5_platform.py
+      - name: V4.5 regression evaluation
+        run: python evaluate_agent.py
+      - name: V5.5 action-safety evaluation
+        run: python evaluate_v5.py
