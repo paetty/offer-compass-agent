@@ -103,7 +103,7 @@ async function run(){
   await new Promise((resolve,reject)=>fixture.on('exit',code=>code===0?resolve():reject(Error('fixture'))));
   await wait(()=>fetch(url+'/api/health').then(r=>r.ok).catch(()=>false),'service');
   const health=await fetch(url+'/api/health').then(r=>r.json());
-  assert.equal(health.agent_version,'5.5');
+  assert.equal(health.agent_version,'5.6');
   const agentBody={jd:'岗位要求：\n1. 熟练 SQL 并能够进行数据分析\n2. 具备独立 A/B 测试经验',goal:'判断是否值得投递',
     lines:['项目经历','使用 SQL 分析用户留存，完成指标定义和结果复核。'],levels:{SQL:2}};
   const agentStart=await fetch(url+'/api/agent/run',{method:'POST',headers:{'Content-Type':'application/json','Origin':url},body:JSON.stringify(agentBody)}).then(r=>r.json());
@@ -124,6 +124,7 @@ async function run(){
   await wait(()=>js("typeof ready!=='undefined' && ready && $('#resume-file')"),'app ready');
   await js("go('o')");
   await wait(()=>js("Boolean($('#v5-source-form')) && $('#v5-capabilities strong').textContent!=='—'"),'V5 Agent workbench');
+  await check("Boolean($('#v5-local-screen')) && Boolean($('#v5-deep-score')) && Boolean($('#v5-model-consent'))",'two-stage job ranking controls');
   await js(`(() => {
     const form=$('#v5-fill-form');
     form.elements.url.value='https://careers.example.com/apply';

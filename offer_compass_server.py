@@ -186,6 +186,10 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
                 body = json.loads(self.rfile.read(size).decode("utf-8"))
                 if self.path == "/api/v5/jobs/discover":
                     result = v5_api.discover(self.server.db_path, body)
+                elif self.path == "/api/v5/jobs/screen":
+                    result = v5_api.local_screen(self.server.db_path, body)
+                elif self.path == "/api/v5/jobs/deep-score":
+                    result = v5_api.deep_score(self.server.db_path, body)
                 elif self.path == "/api/v5/agent/run":
                     result = v5_api.ApplicationGraph(self.server.db_path).run(body)
                 elif self.path == "/api/v5/applications":
@@ -200,7 +204,13 @@ class WorkspaceHandler(BaseHTTPRequestHandler):
             except KeyError:
                 self.send_json(404, {"error": "v5_record_not_found"})
             except (URLError, TimeoutError, OSError):
-                self.send_json(502, {"error": "job_source_unavailable"})
+                self.send_json(502, {"error": "model_scoring_unavailable" if self.path.endswith("/deep-score")
+                                     else "job_source_unavailable"})
+            except RuntimeError as error:
+                if str(error) == "model_not_configured":
+                    self.send_json(503, {"error": "model_not_configured"})
+                else:
+                    self.send_json(502, {"error": "model_scoring_unavailable"})
             except sqlite3.Error:
                 self.send_json(500, {"error": "v5_database_unavailable"})
             except Exception:

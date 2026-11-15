@@ -1,6 +1,8 @@
 [
   {"id":"job_filter_role_city","type":"job_filter"},
   {"id":"job_dedup_idempotent","type":"job_dedup"},
+  {"id":"free_local_screen_uses_no_model","type":"local_screen"},
+  {"id":"deep_score_reuses_fingerprint_cache","type":"model_cache"},
   {"id":"job_to_verified_package","type":"graph_apply"},
   {"id":"critical_gap_pauses_graph","type":"graph_question"},
   {"id":"safe_form_fields_are_mapped","type":"browser_safe"},

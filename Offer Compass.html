@@ -108,6 +108,7 @@ body:has(#rewrite-editor:not([hidden])){overflow:hidden}
 .paper-measure{position:fixed;visibility:hidden;top:0;left:-10000px;pointer-events:none}
 .agent-evidence{margin:8px 0;padding-left:18px;font-size:13px}
 .agent-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}.agent-kpis div{padding:10px;border:1px solid var(--line);border-radius:10px}.agent-kpis strong{display:block;font-size:20px}.job-card{border-top:1px solid var(--line);padding:12px 0}.job-card:first-of-type{border-top:0}.status-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#4fc58b;margin-right:6px}.safety-boundary{border:1px solid #2f765b;background:#14211c;color:#bcebd6;border-radius:10px;padding:10px;margin:10px 0}.safety-boundary strong{color:#65d39f}.workbench-result{white-space:pre-wrap;overflow-wrap:anywhere}
+.score-row{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0}.score-pill{display:inline-flex;align-items:center;padding:4px 9px;border:1px solid var(--line);border-radius:999px;font-size:13px}.score-pill.local{color:#aebcf8}.score-pill.deep{color:#82e2b5;border-color:#39745a}.score-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.score-controls .wide{grid-column:1/-1}@media(max-width:700px){.score-controls{grid-template-columns:1fr}}
 .rewrite-print{display:none}
 .check{display:inline-flex;gap:6px;align-items:center}.check input{width:auto}
 a{color:var(--acc)}
@@ -1157,11 +1158,21 @@ async function renderAgentWorkbench() {
         <label>行业<input name="industry" placeholder="例如 人工智能"></label>
       </div><button class="pri">发现并保存岗位</button><p id="v5-source-status" class="m" role="status"></p></form>
     </section>
-    <section class="card"><div class="hd"><h3>2 · 岗位推荐队列</h3><button id="v5-refresh-jobs" type="button">刷新</button></div>
+    <section class="card"><h3>2 · 两层岗位评分</h3>
+      <p class="m">第一层在本地免费筛选全部岗位；第二层只把入围岗位交给模型深度评分。相同简历与 JD 会直接复用缓存。</p>
+      <div class="score-controls">
+        <label>深度评分岗位上限<input id="v5-score-limit" type="number" min="1" max="20" value="5"></label>
+        <label>本轮 Token 预算<input id="v5-token-budget" type="number" min="1500" max="50000" step="500" value="12000"></label>
+        <label class="wide"><input id="v5-model-consent" type="checkbox"> 我确认深度评分会使用我配置的模型 API 额度；不勾选不会调用模型。</label>
+      </div>
+      <div class="actions"><button id="v5-local-screen" type="button">运行免费本地初筛</button><button id="v5-deep-score" class="pri" type="button">深度评分入围岗位</button></div>
+      <div id="v5-score-status" class="workbench-result m" role="status">尚未运行评分。</div>
+    </section>
+    <section class="card"><div class="hd"><h3>3 · 岗位推荐队列</h3><button id="v5-refresh-jobs" type="button">刷新</button></div>
       <div id="v5-jobs"><p class="m">正在读取岗位库…</p></div></section>
-    <section class="card"><h3>3 · 投递工作台</h3><p class="m">完成证据判断后，岗位会生成独立申请包并保留阶段历史。</p>
+    <section class="card"><h3>4 · 投递工作台</h3><p class="m">完成证据判断后，岗位会生成独立申请包并保留阶段历史。</p>
       <div id="v5-applications"><p class="m">正在读取申请包…</p></div></section>
-    <section class="card"><h3>4 · 安全填写计划</h3>
+    <section class="card"><h3>5 · 安全填写计划</h3>
       <p class="m">这里只生成字段映射清单，不会登录网站或提交申请。网页中的指令按不可信内容处理。</p>
       <form id="v5-fill-form"><label>HTTPS 投递页面<input name="url" type="url" required placeholder="https://careers.example.com/apply"></label>
         <label>页面字段<label class="m">每行一个，例如：姓名、邮箱、手机号、城市、学校、专业、学历、登录密码、提交申请</label><textarea name="fields" rows="4" required></textarea></label>
@@ -1171,11 +1182,16 @@ async function renderAgentWorkbench() {
         <button type="submit">生成填写计划</button><div id="v5-fill-result" class="workbench-result m" role="status"></div></form>
     </section>`;
   if (!databaseMode || demo) {
-    main.querySelectorAll('form button').forEach(button => button.disabled = true);
+    main.querySelectorAll('button').forEach(button => button.disabled = true);
     $('#v5-source-status').textContent = '请使用“启动 Offer Compass”进入数据库版后使用 Agent 工作台。';
     return;
   }
   const live = () => tab === 'o' && $('#v5-jobs');
+  const scoringPayload = () => ({
+    lines: String(state.profile.resumeText || '').split(/\r?\n/).map(line =>
+      /@|(?:手机号|联系电话|住址|手机|电话)\s*[:：]/u.test(line) ? '' : line),
+    levels: Object.fromEntries(resumeLevels(state.profile)), preferences: state.profile.preferences
+  });
   async function refresh() {
     try {
       const [caps, jobsData, applicationsData, tasksData] = await Promise.all([
@@ -1183,9 +1199,17 @@ async function renderAgentWorkbench() {
         v5Request('/api/v5/applications?limit=20'), v5Request('/api/v5/tasks?limit=30')]);
       if (!live()) return;
       $('#v5-capabilities').innerHTML = `<div><strong>${jobsData.jobs.length}</strong>岗位</div><div><strong>${applicationsData.applications.length}</strong>申请包</div><div><strong>${tasksData.tasks.length}</strong>Agent 任务</div>`;
+      const scoreStatus = $('#v5-score-status');
+      if (scoreStatus && scoreStatus.textContent === '尚未运行评分。') scoreStatus.textContent = caps.model_scoring?.configured
+        ? `模型已配置：${caps.model_scoring.default_model}。先运行免费初筛，再按需进行深度评分。`
+        : '免费初筛可直接使用；深度评分尚未配置模型。请用“带模型密钥启动”方式重新启动服务。';
       $('#v5-jobs').innerHTML = jobsData.jobs.length ? jobsData.jobs.map(job => `<article class="job-card">
         <div class="hd"><strong>${escapeHTML(job.role)}</strong><span class="m"><i class="status-dot"></i>${escapeHTML(job.status)}</span></div>
         <p class="m">${escapeHTML([job.company, job.city, job.industry].filter(Boolean).join(' · '))}</p>
+        <div class="score-row">${job.local_score == null ? '<span class="score-pill local">等待本地初筛</span>' : `<span class="score-pill local">本地 ${job.local_score}/100 · ${escapeHTML({shortlist:'入围',review:'待观察',low_evidence:'证据较弱',excluded:'偏好不符'}[job.disposition] || job.disposition)}</span>`}
+          ${job.deep_score == null ? '' : `<span class="score-pill deep">深度 ${job.deep_score}/100 · ${escapeHTML(VERDICTS[job.recommendation] || job.recommendation)}</span>`}</div>
+        ${job.screen_reasons?.length ? `<p class="m">${job.screen_reasons.map(escapeHTML).join(' · ')}</p>` : ''}
+        ${job.deep_summary ? `<p class="m"><b>模型判断：</b>${escapeHTML(job.deep_summary)}</p>` : ''}
         <details><summary>查看 JD</summary><p class="original">${escapeHTML(job.jd || '来源暂未提供完整 JD')}</p></details>
         <div class="actions"><button type="button" data-v5-analyze="${escapeHTML(job.job_id)}">分析并准备投递</button>
           ${job.official_url ? `<a href="${escapeHTML(job.official_url)}" target="_blank" rel="noopener noreferrer">打开官网</a>` : ''}</div></article>`).join('') : '<p class="m">还没有岗位。先连接一个公开招聘来源。</p>';
@@ -1206,6 +1230,34 @@ async function renderAgentWorkbench() {
     }
   }
   $('#v5-refresh-jobs').onclick = refresh;
+  $('#v5-local-screen').onclick = async () => {
+    const status = $('#v5-score-status'), button = $('#v5-local-screen');
+    if (!String(state.profile.resumeText || '').trim()) { status.textContent = '请先在“档案”中导入或粘贴简历。'; return; }
+    status.textContent = '正在本地筛选全部岗位；这一层不会调用模型，也不会消耗 Token。'; button.disabled = true;
+    try {
+      const result = await v5Request('/api/v5/jobs/screen', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(scoringPayload()) });
+      status.textContent = `本地初筛完成：共 ${result.total_jobs} 个岗位，入围 ${result.shortlisted} 个，待观察 ${result.review} 个；模型调用 0 次，Token 0。`;
+      await refresh();
+    } catch { status.textContent = '本地初筛失败。请确认档案中已有简历文字。'; }
+    finally { button.disabled = false; }
+  };
+  $('#v5-deep-score').onclick = async () => {
+    const status = $('#v5-score-status'), button = $('#v5-deep-score');
+    if (!$('#v5-model-consent').checked) { status.textContent = '请先勾选模型额度确认。本地初筛不需要勾选。'; return; }
+    if (!String(state.profile.resumeText || '').trim()) { status.textContent = '请先在“档案”中导入或粘贴简历。'; return; }
+    status.textContent = '正在深度评分本地入围岗位；已评分且内容未变化的岗位会直接读取缓存。'; button.disabled = true;
+    try {
+      const payload = { ...scoringPayload(), allow_model:true,
+        max_jobs:Number($('#v5-score-limit').value), max_total_tokens:Number($('#v5-token-budget').value) };
+      const result = await v5Request('/api/v5/jobs/deep-score', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+      status.textContent = `深度评分完成：候选 ${result.candidate_count} 个，新调用模型 ${result.model_calls} 次，缓存命中 ${result.cache_hits} 次${result.budget_skipped ? `，因预算跳过 ${result.budget_skipped} 个` : ''}。\n本轮实际用量：输入 ${result.usage.input_tokens}、输出 ${result.usage.output_tokens}、合计 ${result.usage.total_tokens} Token；调用前预算 ${result.usage.budget}。`;
+      await refresh();
+    } catch (error) {
+      status.textContent = String(error.message).includes('model_not_configured')
+        ? '尚未配置模型 API。请关闭服务后，用“python offer_compass_server.py --ask-model-key --open”启动。'
+        : '深度评分暂时失败；没有完成的模型调用不会写成评分结果。';
+    } finally { button.disabled = false; }
+  };
   $('#v5-source-form').onsubmit = async event => {
     event.preventDefault();
     const form = event.currentTarget, status = $('#v5-source-status'), data = new FormData(form);
@@ -1214,7 +1266,10 @@ async function renderAgentWorkbench() {
     try {
       const result = await v5Request('/api/v5/jobs/discover', { method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ source_type: 'greenhouse', source: data.get('source'), company: data.get('company'), industry: data.get('industry'), preferences: state.profile.preferences }) });
-      status.textContent = `已保存 ${result.discovered_count} 个符合偏好的岗位。`;
+      let screened = null;
+      if (String(state.profile.resumeText || '').trim()) screened = await v5Request('/api/v5/jobs/screen', {
+        method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(scoringPayload()) });
+      status.textContent = `已保存 ${result.discovered_count} 个符合偏好的岗位。${screened ? ` 免费初筛已自动完成，当前入围 ${screened.shortlisted} 个。` : ' 导入简历后可运行免费初筛。'}`;
       await refresh();
     } catch { status.textContent = '暂时无法读取该来源。请检查链接、网络和求职偏好后重试。'; }
     finally { form.querySelector('button').disabled = false; }

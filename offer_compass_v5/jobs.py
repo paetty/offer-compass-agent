@@ -130,9 +130,24 @@ def discover(db_path, body, fetcher=None):
 
 def list_jobs(db_path, limit=50):
     limit = max(1, min(int(limit), 200))
-    return {"jobs": rows(db_path, """SELECT job_id, company, role, industry, city, jd,
-        official_url, status, first_seen_at, last_seen_at FROM jobs
-        ORDER BY last_seen_at DESC LIMIT ?""", (limit,))}
+    items = rows(db_path, """SELECT j.job_id, j.company, j.role, j.industry, j.city, j.jd,
+        j.official_url, j.status, j.first_seen_at, j.last_seen_at,
+        ls.local_score, ls.disposition, ls.reasons_json, ls.gaps_json,
+        ds.deep_score, ds.recommendation, ds.summary AS deep_summary, ds.model AS score_model,
+        ds.input_tokens, ds.output_tokens, ds.created_at AS scored_at
+        FROM jobs j
+        LEFT JOIN job_local_scores ls ON ls.rowid=(SELECT rowid FROM job_local_scores x
+            WHERE x.job_id=j.job_id ORDER BY x.updated_at DESC LIMIT 1)
+        LEFT JOIN job_deep_scores ds ON ds.rowid=(SELECT rowid FROM job_deep_scores y
+            WHERE y.job_id=j.job_id AND y.profile_hash=ls.profile_hash ORDER BY y.created_at DESC LIMIT 1)
+        ORDER BY COALESCE(ds.deep_score, ls.local_score, -1) DESC, j.last_seen_at DESC LIMIT ?""", (limit,))
+    for item in items:
+        for source, target in (("reasons_json", "screen_reasons"), ("gaps_json", "screen_gaps")):
+            try:
+                item[target] = json.loads(item.pop(source) or "[]")
+            except (TypeError, ValueError):
+                item[target] = []
+    return {"jobs": items}
 
 
 def get_job(db_path, job_id):

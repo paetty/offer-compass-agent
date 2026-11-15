@@ -16,5 +16,5 @@ jobs:
         run: python -m unittest -v test_agent_runtime.py test_v5_platform.py
       - name: V4.5 regression evaluation
         run: python evaluate_agent.py
-      - name: V5.5 action-safety evaluation
+      - name: V5.6 ranking and action-safety evaluation
         run: python evaluate_v5.py

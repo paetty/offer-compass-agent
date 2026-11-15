@@ -5,4 +5,4 @@ changing its public API.  It contains the durable job, application and browser
 assistance boundaries used by the new workbench.
 """
 
-VERSION = "5.5"
+VERSION = "5.6"

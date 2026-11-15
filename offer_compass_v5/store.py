@@ -78,6 +78,53 @@ CREATE TABLE IF NOT EXISTS browser_assist_runs (
     summary_json TEXT NOT NULL,
     created_at TEXT NOT NULL
 );
+"""), (2, """
+CREATE TABLE IF NOT EXISTS job_local_scores (
+    job_id TEXT NOT NULL,
+    profile_hash TEXT NOT NULL,
+    local_score INTEGER NOT NULL,
+    disposition TEXT NOT NULL,
+    matched_json TEXT NOT NULL,
+    gaps_json TEXT NOT NULL,
+    reasons_json TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    PRIMARY KEY(job_id, profile_hash),
+    FOREIGN KEY(job_id) REFERENCES jobs(job_id)
+);
+CREATE TABLE IF NOT EXISTS job_deep_scores (
+    cache_key TEXT PRIMARY KEY,
+    job_id TEXT NOT NULL,
+    profile_hash TEXT NOT NULL,
+    jd_hash TEXT NOT NULL,
+    prompt_version TEXT NOT NULL,
+    model TEXT NOT NULL,
+    deep_score INTEGER NOT NULL,
+    recommendation TEXT NOT NULL,
+    summary TEXT NOT NULL,
+    strengths_json TEXT NOT NULL,
+    gaps_json TEXT NOT NULL,
+    evidence_lines_json TEXT NOT NULL,
+    input_tokens INTEGER NOT NULL,
+    output_tokens INTEGER NOT NULL,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY(job_id) REFERENCES jobs(job_id)
+);
+CREATE TABLE IF NOT EXISTS job_scoring_runs (
+    run_id TEXT PRIMARY KEY,
+    profile_hash TEXT NOT NULL,
+    model TEXT NOT NULL,
+    max_jobs INTEGER NOT NULL,
+    token_budget INTEGER NOT NULL,
+    candidate_count INTEGER NOT NULL,
+    model_calls INTEGER NOT NULL,
+    cache_hits INTEGER NOT NULL,
+    input_tokens INTEGER NOT NULL,
+    output_tokens INTEGER NOT NULL,
+    created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS job_local_score_rank ON job_local_scores(profile_hash, disposition, local_score DESC);
+CREATE INDEX IF NOT EXISTS job_deep_score_job ON job_deep_scores(job_id, created_at DESC);
 """)]
 
 

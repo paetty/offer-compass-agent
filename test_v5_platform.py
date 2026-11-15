@@ -6,7 +6,7 @@ from contextlib import closing
 from pathlib import Path
 
 import offer_compass_runtime
-from offer_compass_v5 import applications, browser, jobs, store
+from offer_compass_v5 import applications, browser, jobs, scoring, store
 from offer_compass_v5.orchestrator import ApplicationGraph
 from offer_compass_v5.schemas import DiscoveryRequest
 from offer_compass_v5.security import assess_page_text, redact
@@ -57,6 +57,59 @@ class V5PlatformTests(unittest.TestCase):
         self.assertTrue(result["application"]["payload"]["evidence"])
         self.assertEqual(len(applications.list_packages(self.db)["applications"]), 1)
 
+    def test_local_screen_is_free_explainable_and_persisted(self):
+        jobs.discover(self.db, self.discovery_body(), self.fake_fetcher)
+        result = scoring.local_screen(self.db, {
+            "lines": ["使用 SQL 分析用户留存，完成指标定义和结果复核。"],
+            "levels": {"SQL": 2}, "preferences": {"roles": ["产品"], "cities": ["北京"]}})
+        self.assertEqual(result["model_calls"], 0)
+        self.assertEqual(result["token_usage"], 0)
+        self.assertEqual(result["total_jobs"], 1)
+        self.assertEqual(result["results"][0]["disposition"], "shortlist")
+        listed = jobs.list_jobs(self.db)["jobs"][0]
+        self.assertGreaterEqual(listed["local_score"], 65)
+        self.assertTrue(listed["screen_reasons"])
+
+    def test_deep_score_requires_consent_and_reuses_cache(self):
+        found = jobs.discover(self.db, self.discovery_body(), self.fake_fetcher)
+        request = {"lines": ["使用 SQL 分析用户留存，完成指标定义和结果复核。"],
+                   "levels": {"SQL": 2}, "preferences": {"roles": ["产品"], "cities": ["北京"]},
+                   "max_jobs": 3, "max_total_tokens": 5000}
+        with self.assertRaises(ValueError):
+            scoring.deep_score(self.db, request, scorer=lambda *_: None)
+        calls = []
+
+        def fake_scorer(payload, model, maximum):
+            calls.append((payload, model, maximum))
+            return ({"score": 88, "recommendation": "apply", "summary": "证据匹配",
+                     "strengths": ["SQL 数据分析经历"], "gaps": [], "evidence_lines": [1]},
+                    {"input_tokens": 600, "output_tokens": 100, "total_tokens": 700})
+
+        first = scoring.deep_score(self.db, dict(request, allow_model=True), scorer=fake_scorer)
+        second = scoring.deep_score(self.db, dict(request, allow_model=True), scorer=fake_scorer)
+        self.assertEqual(first["model_calls"], 1)
+        self.assertEqual(first["usage"]["total_tokens"], 700)
+        self.assertEqual(second["model_calls"], 0)
+        self.assertEqual(second["cache_hits"], 1)
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(first["results"][0]["job_id"], found["job_ids"][0])
+
+    def test_deep_score_downgrades_unverifiable_apply_claim(self):
+        jobs.discover(self.db, self.discovery_body(), self.fake_fetcher)
+
+        def unsupported_scorer(payload, model, maximum):
+            return ({"score": 96, "recommendation": "apply", "summary": "模型声称高度匹配",
+                     "strengths": ["无法定位的经历"], "gaps": [], "evidence_lines": [999]},
+                    {"input_tokens": 400, "output_tokens": 80, "total_tokens": 480})
+
+        result = scoring.deep_score(self.db, {
+            "lines": ["使用 SQL 分析用户留存，完成指标定义和结果复核。"],
+            "levels": {"SQL": 2}, "preferences": {"roles": ["产品"], "cities": ["北京"]},
+            "allow_model": True, "max_jobs": 1, "max_total_tokens": 5000}, scorer=unsupported_scorer)
+        self.assertEqual(result["results"][0]["recommendation"], "conditional")
+        self.assertEqual(result["results"][0]["evidence_lines"], [])
+        self.assertEqual(result["results"][0]["strengths"], [])
+
     def test_graph_retry_is_idempotent_for_application_package(self):
         found = jobs.discover(self.db, self.discovery_body(), self.fake_fetcher)
         request = {"job_id": found["job_ids"][0],
@@ -102,7 +155,7 @@ class V5PlatformTests(unittest.TestCase):
     def test_migration_is_repeatable(self):
         store.initialize(self.db)
         with closing(sqlite3.connect(str(self.db))) as db:
-            self.assertEqual(db.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0], 1)
+            self.assertEqual(db.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0], 2)
 
     def test_extension_has_no_site_or_cookie_permission_and_no_submit_action(self):
         root = Path(__file__).resolve().parent

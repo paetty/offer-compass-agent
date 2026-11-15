@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import offer_compass_runtime
-from offer_compass_v5 import applications, browser, jobs, store
+from offer_compass_v5 import VERSION, applications, browser, jobs, scoring, store
 from offer_compass_v5.orchestrator import ApplicationGraph
 from offer_compass_v5.security import assess_page_text, redact
 
@@ -33,13 +33,31 @@ def fetcher(request):
 
 
 def run(case_type, db_path):
-    if case_type in {"job_filter", "job_dedup", "graph_apply", "graph_question"}:
+    if case_type in {"job_filter", "job_dedup", "graph_apply", "graph_question",
+                     "local_screen", "model_cache"}:
         first = jobs.discover(db_path, body(), fetcher)
     if case_type == "job_filter":
         return first["discovered_count"] == 1 and len(jobs.list_jobs(db_path)["jobs"]) == 1
     if case_type == "job_dedup":
         second = jobs.discover(db_path, body(), fetcher)
         return first["job_ids"] == second["job_ids"] and len(jobs.list_jobs(db_path)["jobs"]) == 1
+    if case_type == "local_screen":
+        result = scoring.local_screen(db_path, {"lines": ["使用 SQL 分析用户留存，完成指标定义和结果复核。"],
+            "levels": {"SQL": 2}, "preferences": {"roles": ["产品"], "cities": ["北京"]}})
+        return result["model_calls"] == 0 and result["token_usage"] == 0 and result["shortlisted"] == 1
+    if case_type == "model_cache":
+        calls = []
+        def fake_score(payload, model, maximum):
+            calls.append(payload)
+            return ({"score": 88, "recommendation": "apply", "summary": "证据匹配",
+                     "strengths": ["SQL 数据分析经历"], "gaps": [], "evidence_lines": [1]},
+                    {"input_tokens": 500, "output_tokens": 80, "total_tokens": 580})
+        request = {"lines": ["使用 SQL 分析用户留存，完成指标定义和结果复核。"],
+                   "levels": {"SQL": 2}, "preferences": {"roles": ["产品"], "cities": ["北京"]},
+                   "allow_model": True, "max_jobs": 3, "max_total_tokens": 5000}
+        one = scoring.deep_score(db_path, request, scorer=fake_score)
+        two = scoring.deep_score(db_path, request, scorer=fake_score)
+        return one["model_calls"] == 1 and two["cache_hits"] == 1 and len(calls) == 1
     if case_type == "graph_apply":
         result = ApplicationGraph(db_path).run({"job_id": first["job_ids"][0],
             "lines": ["使用 SQL 分析用户留存，完成指标定义和结果复核。"], "levels": {"SQL": 2}})
@@ -96,20 +114,20 @@ def main():
             passed, error = False, type(exc).__name__
         rows.append({"id": case["id"], "type": case["type"], "passed": passed, "error": error})
     total, passed = len(rows), sum(item["passed"] for item in rows)
-    report = {"agent_version": "5.5", "generated_at": datetime.now(timezone.utc).isoformat(),
+    report = {"agent_version": VERSION, "generated_at": datetime.now(timezone.utc).isoformat(),
               "total_cases": total, "passed_cases": passed,
               "metrics": {"case_pass_rate": passed / total if total else 0,
                           "unsafe_action_block_rate": sum(item["passed"] for item in rows if item["type"] in
                             {"browser_boundary", "prompt_injection", "redaction"}) / 3},
               "cases": rows}
     args.output.mkdir(parents=True, exist_ok=True)
-    (args.output / "v5.5-baseline.json").write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
-    lines = ["# Agent V5.5 评测基线", "", "- 用例：{}".format(total), "- 通过：{}".format(passed),
+    (args.output / "v{}-baseline.json".format(VERSION)).write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+    lines = ["# Agent V{} 评测基线".format(VERSION), "", "- 用例：{}".format(total), "- 通过：{}".format(passed),
              "- 用例通过率：{:.1%}".format(report["metrics"]["case_pass_rate"]),
              "- 不安全操作拦截率：{:.1%}".format(report["metrics"]["unsafe_action_block_rate"]), "", "## 用例", ""]
     lines += ["- {} `{}`{}".format("✓" if row["passed"] else "✗", row["id"],
               "" if row["passed"] else "：" + str(row["error"])) for row in rows]
-    (args.output / "v5.5-baseline.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    (args.output / "v{}-baseline.md".format(VERSION)).write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(json.dumps({"passed": passed, "total": total, "metrics": report["metrics"],
                       "failed_cases": [row["id"] for row in rows if not row["passed"]]},
                      ensure_ascii=False))
