@@ -374,15 +374,17 @@ def main():
         if key:
             os.environ["DASHSCOPE_API_KEY" if provider == "aliyun" else "OPENAI_API_KEY"] = key
     config = model_provider.settings(require_configured=args.configure_model_only or args.remember_model_config)
-    if args.remember_model_config:
-        model_credentials.save(credential_path, config)
     if args.configure_model_only:
         result = model_provider.test_connection()
         if not result.get("ok"):
             raise SystemExit("Model connection test did not complete.")
+        if args.remember_model_config:
+            model_credentials.save(credential_path, config)
         print("Model configuration encrypted for this Windows user: {} · {}".format(
             config["provider"], config["model"]), flush=True)
         return
+    if args.remember_model_config:
+        model_credentials.save(credential_path, config)
     url = "http://127.0.0.1:{}/".format(args.port)
     try:
         server = WorkspaceServer(("127.0.0.1", args.port), WorkspaceHandler)

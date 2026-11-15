@@ -100,7 +100,7 @@ python offer_compass_server.py --port 8765 --open
 
 或双击 `启动 Offer Compass.cmd`。
 
-如需使用阿里云百炼模型，双击 `启动 Offer Compass - 阿里云模型.cmd`。首次输入的兼容模式 Base URL、模型名和 API Key 会使用 Windows DPAPI 加密到本机 `data/model-credentials.bin`，只允许当前 Windows 用户解密；不会写入数据库、浏览器或 Git。后续启动直接复用，不再重复输入，也不会自动跳转外部浏览器。没有配置模型时，免费本地初筛仍然可用；只有点击“深度评分入围岗位”才会调用所配置的模型并产生模型侧 Token 用量。
+如需使用阿里云百炼模型，双击 `启动 Offer Compass - 阿里云模型.cmd`。首次输入的兼容模式 Base URL、模型名和 API Key 会在连接测试成功后，使用 Windows DPAPI 加密到本机 `data/model-credentials.bin`，只允许当前 Windows 用户解密；不会写入数据库、浏览器或 Git。后续启动直接复用，不再重复输入，也不会自动跳转外部浏览器。如需替换业务空间、Base URL 或 Key，双击 `重新配置 Offer Compass - 阿里云模型.cmd`。没有配置模型时，免费本地初筛仍然可用；只有点击“深度评分入围岗位”才会调用所配置的模型并产生模型侧 Token 用量。
 
 访问 <http://127.0.0.1:8765/>。用户档案默认保存在本地 `data/offer-compass.sqlite3`，不纳入 Git。
 
