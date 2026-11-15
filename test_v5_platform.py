@@ -2,6 +2,7 @@ import json
 import sqlite3
 import tempfile
 import unittest
+from contextlib import closing
 from pathlib import Path
 
 import offer_compass_runtime
@@ -100,7 +101,7 @@ class V5PlatformTests(unittest.TestCase):
 
     def test_migration_is_repeatable(self):
         store.initialize(self.db)
-        with sqlite3.connect(str(self.db)) as db:
+        with closing(sqlite3.connect(str(self.db))) as db:
             self.assertEqual(db.execute("SELECT COUNT(*) FROM schema_migrations").fetchone()[0], 1)
 
     def test_extension_has_no_site_or_cookie_permission_and_no_submit_action(self):

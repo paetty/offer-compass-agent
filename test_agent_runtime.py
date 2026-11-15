@@ -2,6 +2,7 @@ import json
 import sqlite3
 import tempfile
 import unittest
+from contextlib import closing
 from pathlib import Path
 
 import offer_compass_runtime
@@ -50,7 +51,7 @@ class AgentRuntimeTest(unittest.TestCase):
         self.assertEqual(history["runs"][0]["stage"], "ready_for_review")
         self.assertEqual(history["runs"][0]["patch_count"], 1)
 
-        with sqlite3.connect(str(self.db_path)) as db:
+        with closing(sqlite3.connect(str(self.db_path))) as db:
             run = db.execute("SELECT stage, status, revision FROM agent_runs").fetchone()
             calls = db.execute("SELECT tool_name, status, input_json, output_json FROM agent_tool_calls ORDER BY sequence").fetchall()
         self.assertEqual(run, ("ready_for_review", "completed", 2))
