@@ -22,6 +22,8 @@ import offer_compass_agent
 import offer_compass_runtime
 from offer_compass_v5 import VERSION as AGENT_VERSION
 from offer_compass_v5 import api as v5_api
+from offer_compass_v5 import credentials as model_credentials
+from offer_compass_v5 import model_provider
 from offer_compass_v5 import store as v5_store
 from offer_compass_v5.schemas import ValidationError
 
@@ -345,13 +347,42 @@ def main():
     parser.add_argument("--model-provider", choices=("openai", "aliyun"), help="OpenAI-compatible provider")
     parser.add_argument("--model-base-url", help="Validated provider API base URL; never includes the key")
     parser.add_argument("--model-name", help="Provider model ID")
+    parser.add_argument("--use-saved-model-config", action="store_true",
+                        help="Load the current Windows user's encrypted model configuration")
+    parser.add_argument("--remember-model-config", action="store_true",
+                        help="Encrypt the configured provider settings for the current Windows user")
+    parser.add_argument("--configure-model-only", action="store_true",
+                        help="Validate and save model settings, then exit without starting the site")
     args = parser.parse_args()
+    credential_path = ROOT / "data" / "model-credentials.bin"
+    if args.use_saved_model_config:
+        model_credentials.apply(credential_path)
     if args.model_provider:
         os.environ["OFFER_COMPASS_MODEL_PROVIDER"] = args.model_provider
     if args.model_base_url:
         os.environ["OFFER_COMPASS_MODEL_BASE_URL"] = args.model_base_url
     if args.model_name:
         os.environ["OFFER_COMPASS_MODEL"] = args.model_name
+    if args.ask_model_key and not model_provider.settings()["configured"]:
+        provider = os.environ.get("OFFER_COMPASS_MODEL_PROVIDER", "openai").strip().lower()
+        if provider == "aliyun" and not os.environ.get("OFFER_COMPASS_MODEL_BASE_URL", "").strip():
+            base = input("Alibaba Model Studio Base URL (with WorkspaceId): ").strip()
+            if base:
+                os.environ["OFFER_COMPASS_MODEL_BASE_URL"] = base
+        key = getpass("{} API key: ".format(
+            "Alibaba Model Studio" if provider == "aliyun" else "OpenAI")).strip()
+        if key:
+            os.environ["DASHSCOPE_API_KEY" if provider == "aliyun" else "OPENAI_API_KEY"] = key
+    config = model_provider.settings(require_configured=args.configure_model_only or args.remember_model_config)
+    if args.remember_model_config:
+        model_credentials.save(credential_path, config)
+    if args.configure_model_only:
+        result = model_provider.test_connection()
+        if not result.get("ok"):
+            raise SystemExit("Model connection test did not complete.")
+        print("Model configuration encrypted for this Windows user: {} · {}".format(
+            config["provider"], config["model"]), flush=True)
+        return
     url = "http://127.0.0.1:{}/".format(args.port)
     try:
         server = WorkspaceServer(("127.0.0.1", args.port), WorkspaceHandler)
@@ -367,16 +398,6 @@ def main():
                 return
         raise SystemExit("Could not start Offer Compass on {}. The port may be in use.".format(url))
     with server:
-        if args.ask_model_key:
-            provider = os.environ.get("OFFER_COMPASS_MODEL_PROVIDER", "openai").strip().lower()
-            if provider == "aliyun" and not os.environ.get("OFFER_COMPASS_MODEL_BASE_URL", "").strip():
-                base = input("Alibaba Model Studio Base URL (with WorkspaceId): ").strip()
-                if base:
-                    os.environ["OFFER_COMPASS_MODEL_BASE_URL"] = base
-            key = getpass("{} API key (Enter to use local mode): ".format(
-                "Alibaba Model Studio" if provider == "aliyun" else "OpenAI")).strip()
-            if key:
-                os.environ["DASHSCOPE_API_KEY" if provider == "aliyun" else "OPENAI_API_KEY"] = key
         initialize(args.db)
         server.db_path = args.db
         url = "http://127.0.0.1:{}/".format(server.server_port)

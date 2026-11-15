@@ -8,7 +8,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import offer_compass_runtime
-from offer_compass_v5 import applications, browser, jobs, model_provider, scoring, store
+from offer_compass_v5 import applications, browser, credentials, jobs, model_provider, scoring, store
 from offer_compass_v5.orchestrator import ApplicationGraph
 from offer_compass_v5.schemas import DiscoveryRequest
 from offer_compass_v5.security import assess_page_text, redact
@@ -87,6 +87,16 @@ class V5PlatformTests(unittest.TestCase):
         self.assertEqual(adapted["reasoning"], {"effort": "none"})
         self.assertIn("name", source["text"]["format"])
         self.assertNotIn("json_schema", source["text"]["format"])
+
+    @unittest.skipUnless(os.name == "nt", "Windows DPAPI only")
+    def test_model_credentials_are_encrypted_and_user_bound(self):
+        path = Path(self.folder.name) / "credentials.bin"
+        original = {"provider": "aliyun", "base_url":
+                    "https://workspace.cn-beijing.maas.aliyuncs.com/compatible-mode/v1",
+                    "model": "qwen3.8-flash", "api_key": "not-a-real-key"}
+        credentials.save(path, original)
+        self.assertNotIn(b"not-a-real-key", path.read_bytes())
+        self.assertEqual(credentials.load(path), original)
 
     def test_graph_creates_evidence_bound_application_package(self):
         found = jobs.discover(self.db, self.discovery_body(), self.fake_fetcher)
