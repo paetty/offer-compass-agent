@@ -3,6 +3,7 @@
 import argparse
 import json
 import tempfile
+from contextlib import closing
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -46,7 +47,10 @@ def run(case_type, db_path):
     if case_type == "graph_question":
         # Replace the stored JD with a requirement unsupported by the resume.
         import sqlite3
-        with sqlite3.connect(str(db_path)) as db, db:
+        # sqlite3's context manager commits/rolls back but does not close the
+        # connection.  Keep the evaluator deterministic on Windows, where an
+        # open handle prevents TemporaryDirectory from removing the database.
+        with closing(sqlite3.connect(str(db_path))) as db, db:
             db.execute("UPDATE jobs SET jd=? WHERE job_id=?", ("岗位要求：具备独立 A/B 测试经验", first["job_ids"][0]))
         result = ApplicationGraph(db_path).run({"job_id": first["job_ids"][0], "lines": ["项目经历"], "levels": {}})
         return result["stage"] == "human_clarification" and result["application"] is None
@@ -106,7 +110,9 @@ def main():
     lines += ["- {} `{}`{}".format("✓" if row["passed"] else "✗", row["id"],
               "" if row["passed"] else "：" + str(row["error"])) for row in rows]
     (args.output / "v5.5-baseline.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
-    print(json.dumps({"passed": passed, "total": total, "metrics": report["metrics"]}, ensure_ascii=False))
+    print(json.dumps({"passed": passed, "total": total, "metrics": report["metrics"],
+                      "failed_cases": [row["id"] for row in rows if not row["passed"]]},
+                     ensure_ascii=False))
     raise SystemExit(0 if passed == total else 1)
 
 
